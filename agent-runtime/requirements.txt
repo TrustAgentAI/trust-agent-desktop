@@ -1,0 +1,9 @@
+openai>=1.30.0
+anthropic>=0.28.0
+httpx>=0.27.0
+websockets>=12.0
+pydantic>=2.7.0
+deepgram-sdk>=3.4.0
+elevenlabs>=1.2.0
+pipecat-ai>=0.0.30
+sqlite-utils>=3.36

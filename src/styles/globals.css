@@ -1,0 +1,150 @@
+:root {
+  /* Brand Colors */
+  --color-dark-navy: #0A1628;
+  --color-navy-2: #0D1F3C;
+  --color-electric-blue: #1E6FFF;
+  --color-ion-cyan: #00D4FF;
+  --color-mid-blue: #1A3A6B;
+  --color-text-mid: #2D4A7A;
+  --color-text-muted: #8899BB;
+  --color-success: #00AA78;
+  --color-error: #CC3333;
+
+  /* Surfaces */
+  --color-surface-1: #0F1D35;
+  --color-surface-2: #132744;
+  --color-border: rgba(30, 111, 255, 0.12);
+  --color-border-active: rgba(30, 111, 255, 0.3);
+
+  /* Typography */
+  --font-sans: 'Manrope', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Spacing */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(30, 111, 255, 0.15);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-dark-navy);
+  color: #E8EDF5;
+  line-height: 1.6;
+  overflow: hidden;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-mid-blue);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-electric-blue);
+}
+
+/* Selection */
+::selection {
+  background: rgba(30, 111, 255, 0.3);
+  color: #fff;
+}
+
+/* Links */
+a {
+  color: var(--color-electric-blue);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--color-ion-cyan);
+}
+
+/* Code */
+code, pre {
+  font-family: var(--font-mono);
+}
+
+/* Focus */
+:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+}
+
+/* Prevent text selection during drag */
+[data-tauri-drag-region] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Utility */
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+.text-mid {
+  color: var(--color-text-mid);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes waveform {
+  0%, 100% { height: 4px; }
+  50% { height: 18px; }
+}
