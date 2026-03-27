@@ -13,19 +13,13 @@ export function DriveSelector({ onConfirm, onCancel }: DriveSelectorProps) {
 
   const handlePickFolder = async () => {
     try {
-      const { open } = await import('@tauri-apps/plugin-dialog');
-      const result = await open({
-        directory: true,
-        multiple: false,
-        title: 'Select Folder to Grant Access',
-      });
-
+      const { openDirectoryDialog } = await import('@/lib/tauri-compat');
+      const result = await openDirectoryDialog();
       if (result) {
-        const path = typeof result === 'string' ? result : String(result);
-        setSelectedPath(path);
+        setSelectedPath(result);
       }
     } catch {
-      // Not in Tauri context or dialog was cancelled
+      // Dialog was cancelled or not available
     }
   };
 

@@ -1,230 +1,198 @@
 import React from 'react';
-import { Shield, Trash2, Plus, FolderOpen, Eye, Pencil } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { DriveSelector } from '@/components/permissions/DriveSelector';
+import { Shield, X, FolderPlus } from 'lucide-react';
 import { usePermissionStore } from '@/store/permissionStore';
-import { useAgentStore } from '@/store/agentStore';
-import type { FilePermissionGrant } from '@/lib/roleConfig';
+import { openDirectoryDialog } from '@/lib/tauri-compat';
 
 interface PermissionManagerProps {
-  activeRoleId: string | null;
+  activeRoleId?: string | null;
 }
 
 export function PermissionManager({ activeRoleId }: PermissionManagerProps) {
-  const { grants, addGrant, removeGrant, loadGrants, getGrantsForRole } =
+  const { grants, addGrant, removeGrant, getGrantsForRole, loadGrants } =
     usePermissionStore();
-  const { hiredRoles } = useAgentStore();
-  const [showSelector, setShowSelector] = React.useState(false);
-  const [confirmRemoveId, setConfirmRemoveId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     loadGrants().catch(() => {});
   }, [loadGrants]);
 
+  const roleId = activeRoleId || 'default';
   const roleGrants = activeRoleId ? getGrantsForRole(activeRoleId) : grants;
-  const activeRole = hiredRoles.find((r) => r.id === activeRoleId);
 
-  const handleGrantAccess = async (path: string, permissions: ('read' | 'write')[]) => {
-    if (!activeRoleId) return;
-
-    const grant: FilePermissionGrant = {
-      id: `perm_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      roleHireId: activeRoleId,
+  const handleAddFolder = async (access: 'read' | 'read-write') => {
+    const path = await openDirectoryDialog();
+    if (!path) return;
+    addGrant({
       path,
-      permissions,
-      grantedAt: Date.now(),
-    };
-
-    try {
-      await addGrant(grant);
-      setShowSelector(false);
-    } catch {
-      // Error handled by store
-    }
+      access,
+      agentRoleId: roleId,
+      grantedAt: new Date().toISOString(),
+    });
   };
 
-  const handleRemove = async (grantId: string) => {
-    try {
-      await removeGrant(grantId);
-      setConfirmRemoveId(null);
-    } catch {
-      // Error handled by store
-    }
+  const handleRevoke = (path: string) => {
+    removeGrant(path, roleId);
   };
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
-      {/* Header */}
-      <div
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <Shield size={20} style={{ color: 'var(--color-electric-blue)' }} />
+        <span
+          style={{
+            fontSize: '18px',
+            fontWeight: 800,
+            fontFamily: 'var(--font-sans)',
+            color: '#E8EDF5',
+          }}
+        >
+          Permissions
+        </span>
+      </div>
+      <p
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          fontSize: '13px',
+          color: 'var(--color-text-muted)',
           marginBottom: 20,
         }}
       >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Shield size={20} style={{ color: 'var(--color-electric-blue)' }} />
-            <span style={{ fontSize: '18px', fontWeight: 700, color: '#E8EDF5' }}>
-              Permissions
-            </span>
-          </div>
-          <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: 4 }}>
-            {activeRole
-              ? `Manage folder access for ${activeRole.name}`
-              : 'Select an agent to manage folder permissions'}
-          </div>
-        </div>
+        Control which local folders this role can access.
+      </p>
 
-        {activeRoleId && (
-          <Button
-            size="sm"
-            icon={<Plus size={14} />}
-            onClick={() => setShowSelector(true)}
-          >
-            Grant Access
-          </Button>
-        )}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        <button
+          onClick={() => handleAddFolder('read')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '8px 14px',
+            background: 'transparent',
+            border: '1px solid var(--color-border-active)',
+            borderRadius: 'var(--radius-md)',
+            color: '#E8EDF5',
+            fontFamily: 'var(--font-sans)',
+            fontSize: '13px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <FolderPlus size={14} />
+          Add folder (read only)
+        </button>
+        <button
+          onClick={() => handleAddFolder('read-write')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '8px 14px',
+            background: 'transparent',
+            border: '1px solid var(--color-ion-cyan)',
+            borderRadius: 'var(--radius-md)',
+            color: 'var(--color-ion-cyan)',
+            fontFamily: 'var(--font-sans)',
+            fontSize: '13px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <FolderPlus size={14} />
+          Add folder (read & write)
+        </button>
       </div>
 
-      {/* Folder Selector */}
-      {showSelector && activeRoleId && (
-        <div style={{ marginBottom: 16 }}>
-          <DriveSelector
-            onConfirm={handleGrantAccess}
-            onCancel={() => setShowSelector(false)}
-          />
-        </div>
-      )}
-
-      {/* No agent selected */}
-      {!activeRoleId && (
+      {roleGrants.length === 0 && (
         <div
           style={{
             textAlign: 'center',
-            padding: '40px 20px',
+            padding: '48px 20px',
             color: 'var(--color-text-muted)',
             fontSize: '13px',
+            lineHeight: 1.6,
           }}
         >
-          Select an agent from the sidebar to manage its file permissions.
+          No folders granted. Add a folder to give this role access to local files.
         </div>
       )}
 
-      {/* Permissions list */}
-      {activeRoleId && roleGrants.length === 0 && !showSelector && (
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '40px 20px',
-            color: 'var(--color-text-muted)',
-            fontSize: '13px',
-          }}
-        >
-          No folder access granted to this agent yet.
-        </div>
-      )}
-
-      {activeRoleId && roleGrants.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {roleGrants.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {roleGrants.map((grant) => (
-            <PermissionRow
-              key={grant.id}
-              grant={grant}
-              agentName={activeRole?.name || 'Agent'}
-              isConfirming={confirmRemoveId === grant.id}
-              onRevoke={() => setConfirmRemoveId(grant.id)}
-              onConfirmRevoke={() => handleRemove(grant.id)}
-              onCancelRevoke={() => setConfirmRemoveId(null)}
-            />
+            <div
+              key={`${grant.path}-${grant.agentRoleId}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 14px',
+                background: 'var(--color-surface-1)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-md)',
+              }}
+            >
+              <div
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '12px',
+                  color: '#E8EDF5',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {grant.path}
+              </div>
+
+              <span
+                style={{
+                  flexShrink: 0,
+                  padding: '2px 8px',
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  fontFamily: 'var(--font-sans)',
+                  borderRadius: 100,
+                  border: `1px solid ${
+                    grant.access === 'read-write'
+                      ? 'var(--color-ion-cyan)'
+                      : 'var(--color-text-muted)'
+                  }`,
+                  color:
+                    grant.access === 'read-write'
+                      ? 'var(--color-ion-cyan)'
+                      : 'var(--color-text-muted)',
+                }}
+              >
+                {grant.access === 'read-write' ? 'Read & Write' : 'Read'}
+              </span>
+
+              <button
+                onClick={() => handleRevoke(grant.path)}
+                title="Revoke access"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 24,
+                  height: 24,
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--color-text-muted)',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  transition: 'color 0.15s ease',
+                }}
+              >
+                <X size={14} />
+              </button>
+            </div>
           ))}
         </div>
       )}
     </div>
-  );
-}
-
-function PermissionRow({
-  grant,
-  agentName,
-  isConfirming,
-  onRevoke,
-  onConfirmRevoke,
-  onCancelRevoke,
-}: {
-  grant: FilePermissionGrant;
-  agentName: string;
-  isConfirming: boolean;
-  onRevoke: () => void;
-  onConfirmRevoke: () => void;
-  onCancelRevoke: () => void;
-}) {
-  const hasWrite = grant.permissions.includes('write');
-  const accessLabel = hasWrite ? 'Read + Write' : 'Read Only';
-  const grantDate = new Date(grant.grantedAt).toLocaleDateString();
-
-  return (
-    <Card variant="dark" padding="14px 16px">
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-        }}
-      >
-        <FolderOpen size={18} style={{ color: 'var(--color-electric-blue)', flexShrink: 0 }} />
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              fontSize: '13px',
-              fontWeight: 600,
-              color: '#E8EDF5',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              fontFamily: 'var(--font-mono)',
-            }}
-          >
-            {grant.path}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-            <Badge
-              variant="default"
-              label={accessLabel}
-              size="sm"
-            />
-            <span style={{ fontSize: '10px', color: 'var(--color-text-mid)' }}>
-              Granted {grantDate} to {agentName}
-            </span>
-          </div>
-        </div>
-
-        {/* Access level icon */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-          <Eye size={12} style={{ color: 'var(--color-success)' }} />
-          {hasWrite && <Pencil size={12} style={{ color: 'var(--color-ion-cyan)' }} />}
-        </div>
-
-        {/* Revoke */}
-        {!isConfirming ? (
-          <Button variant="ghost" size="sm" onClick={onRevoke}>
-            <Trash2 size={14} style={{ color: 'var(--color-error)' }} />
-          </Button>
-        ) : (
-          <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-            <Button variant="danger" size="sm" onClick={onConfirmRevoke}>
-              Revoke
-            </Button>
-            <Button variant="ghost" size="sm" onClick={onCancelRevoke}>
-              Keep
-            </Button>
-          </div>
-        )}
-      </div>
-    </Card>
   );
 }

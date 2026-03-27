@@ -1,73 +1,63 @@
-// Agent/role state store
+/**
+ * Agent/Role store - manages hired roles per spec 2.6.
+ * Persists to localStorage.
+ */
 import { create } from 'zustand';
-import type { HiredRole, RoleSession } from '../lib/roleConfig';
-import { gateway, GatewayError } from '../lib/gateway';
+import { localStore } from '@/lib/tauri-compat';
 
-interface AgentState {
-  hiredRoles: HiredRole[];
-  activeRoleId: string | null;
-  activeSession: RoleSession | null;
-  isLoading: boolean;
-  error: string | null;
-
-  setActiveRole: (roleId: string | null) => void;
-  loadHiredRoles: () => Promise<void>;
-  startSession: (roleHireId: string) => Promise<RoleSession>;
-  endSession: () => void;
-  clearError: () => void;
+interface HiredRole {
+  hireId: string;
+  roleName: string;
+  roleCategory: string;
+  trustScore: number;
+  trustBadge: 'PLATINUM' | 'GOLD' | 'SILVER' | 'BASIC';
+  isActive: boolean;
+  sessionToken: string | null;
 }
 
-export const useAgentStore = create<AgentState>((set, _get) => ({
-  hiredRoles: [],
+interface AgentStore {
+  roles: HiredRole[];
+  activeRoleId: string | null;
+  addRole: (role: HiredRole) => void;
+  setActiveRole: (hireId: string) => void;
+  updateSessionToken: (hireId: string, token: string) => void;
+  removeRole: (hireId: string) => void;
+}
+
+export const useAgentStore = create<AgentStore>((set, get) => ({
+  roles: localStore.get<HiredRole[]>('agent_roles') || [],
   activeRoleId: null,
-  activeSession: null,
-  isLoading: false,
-  error: null,
 
-  setActiveRole: (roleId: string | null) => {
-    set({ activeRoleId: roleId });
+  addRole: (role: HiredRole) => {
+    const updated = [...get().roles, role];
+    localStore.set('agent_roles', updated);
+    set({ roles: updated });
   },
 
-  loadHiredRoles: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const roles = await gateway.roles.listHired();
-      set({ hiredRoles: roles, isLoading: false });
-    } catch (err) {
-      const message =
-        err instanceof GatewayError ? err.message : 'Failed to load hired roles';
-      set({ error: message, isLoading: false });
-      throw err;
-    }
+  setActiveRole: (hireId: string) => {
+    const roles = get().roles.map((r) => ({
+      ...r,
+      isActive: r.hireId === hireId,
+    }));
+    localStore.set('agent_roles', roles);
+    set({ roles, activeRoleId: hireId });
   },
 
-  startSession: async (roleHireId: string) => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await gateway.sessions.create(roleHireId);
-      const session: RoleSession = {
-        sessionId: response.sessionId,
-        roleHireId: response.roleHireId,
-        startedAt: Date.now(),
-        messages: [],
-        status: 'active',
-        apiKey: response.apiKey,
-      };
-      set({ activeSession: session, isLoading: false });
-      return session;
-    } catch (err) {
-      const message =
-        err instanceof GatewayError ? err.message : 'Failed to start session';
-      set({ error: message, isLoading: false });
-      throw err;
-    }
+  updateSessionToken: (hireId: string, token: string) => {
+    const roles = get().roles.map((r) =>
+      r.hireId === hireId ? { ...r, sessionToken: token } : r
+    );
+    localStore.set('agent_roles', roles);
+    set({ roles });
   },
 
-  endSession: () => {
-    set({ activeSession: null });
+  removeRole: (hireId: string) => {
+    const updated = get().roles.filter((r) => r.hireId !== hireId);
+    localStore.set('agent_roles', updated);
+    const activeRoleId = get().activeRoleId === hireId ? null : get().activeRoleId;
+    set({ roles: updated, activeRoleId });
   },
-
-  clearError: () => set({ error: null }),
 }));
 
+export type { HiredRole };
 export default useAgentStore;

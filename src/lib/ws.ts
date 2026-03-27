@@ -1,19 +1,30 @@
-// WebSocket client for Trust Agent Desktop - real-time agent communication
+/**
+ * WebSocket client for Trust Agent Desktop.
+ * Auto-reconnects with exponential backoff (1s, 2s, 4s, 8s, max 30s).
+ * Exports singleton wsClient.
+ */
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'wss://api.trust-agent.ai/ws';
-const RECONNECT_DELAY = 3000;
+const MIN_BACKOFF = 1000;
+const MAX_BACKOFF = 30000;
+
+type WSStatus = 'connected' | 'connecting' | 'disconnected';
 
 type WSEventType =
   | 'agent-response'
   | 'agent-thinking'
   | 'agent-error'
+  | 'agent:token'
+  | 'agent:done'
+  | 'agent:speaking'
+  | 'audit:event'
   | 'task-update'
   | 'session-end'
   | 'connected'
   | 'disconnected'
   | 'reconnecting';
 
-type WSSendType = 'user-message' | 'start-session' | 'cancel-task';
+type WSSendType = 'user-message' | 'start-session' | 'cancel-task' | 'agent:message';
 
 type EventHandler = (data: unknown) => void;
 
@@ -28,22 +39,24 @@ export class TrustAgentWS {
   private token: string | null = null;
   private shouldReconnect = false;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-  private isConnecting = false;
+  private status: WSStatus = 'disconnected';
+  private currentBackoff = MIN_BACKOFF;
 
   connect(token: string): void {
-    if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) {
+    if (this.status === 'connecting' || this.status === 'connected') {
       return;
     }
 
     this.token = token;
     this.shouldReconnect = true;
-    this.isConnecting = true;
+    this.status = 'connecting';
 
     try {
       this.ws = new WebSocket(`${WS_URL}?token=${encodeURIComponent(token)}`);
 
       this.ws.onopen = () => {
-        this.isConnecting = false;
+        this.status = 'connected';
+        this.currentBackoff = MIN_BACKOFF;
         this.notify('connected', null);
       };
 
@@ -52,44 +65,31 @@ export class TrustAgentWS {
           const msg: WSMessage = JSON.parse(event.data as string);
           this.notify(msg.type, msg.payload);
         } catch {
-          // Ignore malformed messages
+          // Ignore malformed messages - log but do not crash
         }
       };
 
       this.ws.onclose = () => {
-        this.isConnecting = false;
+        this.status = 'disconnected';
         this.ws = null;
         this.notify('disconnected', null);
-
-        if (this.shouldReconnect && this.token) {
-          this.notify('reconnecting', null);
-          this.reconnectTimer = setTimeout(() => {
-            if (this.token) {
-              this.connect(this.token);
-            }
-          }, RECONNECT_DELAY);
-        }
+        this.scheduleReconnect();
       };
 
       this.ws.onerror = () => {
-        this.isConnecting = false;
+        this.status = 'disconnected';
         // onclose will fire after onerror, reconnection handled there
       };
     } catch {
-      this.isConnecting = false;
-      if (this.shouldReconnect && this.token) {
-        this.reconnectTimer = setTimeout(() => {
-          if (this.token) {
-            this.connect(this.token);
-          }
-        }, RECONNECT_DELAY);
-      }
+      this.status = 'disconnected';
+      this.scheduleReconnect();
     }
   }
 
   disconnect(): void {
     this.shouldReconnect = false;
     this.token = null;
+    this.currentBackoff = MIN_BACKOFF;
 
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
@@ -100,6 +100,12 @@ export class TrustAgentWS {
       this.ws.close();
       this.ws = null;
     }
+
+    this.status = 'disconnected';
+  }
+
+  getStatus(): WSStatus {
+    return this.status;
   }
 
   on(event: WSEventType, handler: EventHandler): void {
@@ -126,7 +132,21 @@ export class TrustAgentWS {
   }
 
   get isConnected(): boolean {
-    return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
+    return this.status === 'connected';
+  }
+
+  private scheduleReconnect(): void {
+    if (!this.shouldReconnect || !this.token) return;
+
+    this.notify('reconnecting', null);
+    this.reconnectTimer = setTimeout(() => {
+      if (this.token && this.shouldReconnect) {
+        this.connect(this.token);
+      }
+    }, this.currentBackoff);
+
+    // Exponential backoff: 1s, 2s, 4s, 8s, ... max 30s
+    this.currentBackoff = Math.min(this.currentBackoff * 2, MAX_BACKOFF);
   }
 
   private notify(event: string, data: unknown): void {

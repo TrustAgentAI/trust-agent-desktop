@@ -4,9 +4,10 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   icon?: React.ReactNode;
+  monospace?: boolean;
 }
 
-export function Input({ label, error, icon, style, ...props }: InputProps) {
+export function Input({ label, error, icon, monospace, style, ...props }: InputProps) {
   const [focused, setFocused] = React.useState(false);
 
   return (
@@ -41,7 +42,7 @@ export function Input({ label, error, icon, style, ...props }: InputProps) {
             border: 'none',
             outline: 'none',
             color: '#E8EDF5',
-            fontFamily: 'var(--font-sans)',
+            fontFamily: monospace ? 'var(--font-mono)' : 'var(--font-sans)',
             fontSize: '13px',
             lineHeight: '20px',
             ...style,

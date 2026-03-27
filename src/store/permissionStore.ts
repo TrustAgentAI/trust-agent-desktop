@@ -1,79 +1,51 @@
-// File permission state store - synced with Tauri store for persistence
 import { create } from 'zustand';
-import { Store } from '@tauri-apps/plugin-store';
-import type { FilePermissionGrant } from '../lib/roleConfig';
+import { localStore } from '@/lib/tauri-compat';
 
-interface PermissionState {
-  grants: FilePermissionGrant[];
-  isLoading: boolean;
-  error: string | null;
+interface PermissionGrant {
+  path: string;
+  access: 'read' | 'read-write';
+  agentRoleId: string;
+  grantedAt: string;
+}
 
-  addGrant: (grant: FilePermissionGrant) => Promise<void>;
-  removeGrant: (grantId: string) => Promise<void>;
+interface PermissionStore {
+  grants: PermissionGrant[];
+  addGrant: (grant: PermissionGrant) => void;
+  removeGrant: (path: string, agentRoleId: string) => void;
+  getGrantsForRole: (agentRoleId: string) => PermissionGrant[];
   loadGrants: () => Promise<void>;
-  getGrantsForRole: (roleHireId: string) => FilePermissionGrant[];
-  clearError: () => void;
 }
 
-let permStore: Store | null = null;
+const STORAGE_KEY = 'permission_grants';
 
-async function getPermStore(): Promise<Store> {
-  if (!permStore) {
-    permStore = await Store.load('permissions.json');
-  }
-  return permStore;
-}
-
-export const usePermissionStore = create<PermissionState>((set, get) => ({
+export const usePermissionStore = create<PermissionStore>((set, get) => ({
   grants: [],
-  isLoading: false,
-  error: null,
 
-  addGrant: async (grant: FilePermissionGrant) => {
-    try {
-      const updatedGrants = [...get().grants, grant];
-      const store = await getPermStore();
-      await store.set('grants', updatedGrants);
-      await store.save();
-      set({ grants: updatedGrants });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to add permission grant';
-      set({ error: message });
-      throw err;
-    }
+  addGrant: (grant: PermissionGrant) => {
+    const updated = [...get().grants, grant];
+    set({ grants: updated });
+    localStore.set(STORAGE_KEY, updated);
   },
 
-  removeGrant: async (grantId: string) => {
-    try {
-      const updatedGrants = get().grants.filter((g) => g.id !== grantId);
-      const store = await getPermStore();
-      await store.set('grants', updatedGrants);
-      await store.save();
-      set({ grants: updatedGrants });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to remove permission grant';
-      set({ error: message });
-      throw err;
-    }
+  removeGrant: (path: string, agentRoleId: string) => {
+    const updated = get().grants.filter(
+      (g) => !(g.path === path && g.agentRoleId === agentRoleId),
+    );
+    set({ grants: updated });
+    localStore.set(STORAGE_KEY, updated);
+  },
+
+  getGrantsForRole: (agentRoleId: string) => {
+    return get().grants.filter((g) => g.agentRoleId === agentRoleId);
   },
 
   loadGrants: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const store = await getPermStore();
-      const grants = await store.get<FilePermissionGrant[]>('grants');
-      set({ grants: grants || [], isLoading: false });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load permissions';
-      set({ error: message, isLoading: false });
+    const stored = localStore.get<PermissionGrant[]>(STORAGE_KEY);
+    if (stored && Array.isArray(stored)) {
+      set({ grants: stored });
     }
   },
-
-  getGrantsForRole: (roleHireId: string) => {
-    return get().grants.filter((g) => g.roleHireId === roleHireId);
-  },
-
-  clearError: () => set({ error: null }),
 }));
 
+export type { PermissionGrant };
 export default usePermissionStore;

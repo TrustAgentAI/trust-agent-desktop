@@ -1,11 +1,25 @@
-type BadgeVariant = 'trust' | 'status' | 'tier' | 'default';
+import React from 'react';
+
+type BadgeVariant = 'platinum' | 'gold' | 'silver' | 'basic' | 'success' | 'error' | 'info' | 'trust' | 'status' | 'tier' | 'default';
 
 interface BadgeProps {
   variant?: BadgeVariant;
   value?: number;
-  label: string;
+  label?: string;
   size?: 'sm' | 'md';
+  children?: React.ReactNode;
 }
+
+const variantStyles: Record<string, { color: string; bg: string }> = {
+  platinum: { color: 'var(--color-ion-cyan)', bg: 'rgba(0,212,255,0.12)' },
+  gold: { color: '#FFB740', bg: 'rgba(255,183,64,0.12)' },
+  silver: { color: '#C0C8D8', bg: 'rgba(192,200,216,0.12)' },
+  basic: { color: 'var(--color-text-muted)', bg: 'var(--color-surface-2)' },
+  success: { color: 'var(--color-success)', bg: 'rgba(0,170,120,0.12)' },
+  error: { color: 'var(--color-error)', bg: 'rgba(204,51,51,0.12)' },
+  info: { color: 'var(--color-electric-blue)', bg: 'rgba(30,111,255,0.12)' },
+  default: { color: 'var(--color-text-muted)', bg: 'var(--color-surface-2)' },
+};
 
 function getTrustColor(score: number): string {
   if (score >= 90) return 'var(--color-success)';
@@ -28,27 +42,27 @@ function getTierColor(label: string): string {
   return 'var(--color-text-muted)';
 }
 
-export function Badge({ variant = 'default', value, label, size = 'sm' }: BadgeProps) {
+export function Badge({ variant = 'default', value, label, size = 'sm', children }: BadgeProps) {
   let color = 'var(--color-text-muted)';
   let bg = 'var(--color-surface-2)';
 
-  switch (variant) {
-    case 'trust':
-      color = getTrustColor(value ?? 0);
-      bg = `color-mix(in srgb, ${color} 15%, transparent)`;
-      break;
-    case 'status':
-      color = getStatusColor(label);
-      bg = `color-mix(in srgb, ${color} 15%, transparent)`;
-      break;
-    case 'tier':
-      color = getTierColor(label);
-      bg = `color-mix(in srgb, ${color} 15%, transparent)`;
-      break;
+  if (variant === 'trust') {
+    color = getTrustColor(value ?? 0);
+    bg = `color-mix(in srgb, ${color} 15%, transparent)`;
+  } else if (variant === 'status') {
+    color = getStatusColor(label || '');
+    bg = `color-mix(in srgb, ${color} 15%, transparent)`;
+  } else if (variant === 'tier') {
+    color = getTierColor(label || '');
+    bg = `color-mix(in srgb, ${color} 15%, transparent)`;
+  } else if (variantStyles[variant]) {
+    color = variantStyles[variant].color;
+    bg = variantStyles[variant].bg;
   }
 
   const pad = size === 'sm' ? '2px 8px' : '4px 12px';
   const fs = size === 'sm' ? '10px' : '12px';
+  const displayText = children || (variant === 'trust' && value !== undefined ? `${value}%` : label);
 
   return (
     <span
@@ -76,11 +90,11 @@ export function Badge({ variant = 'default', value, label, size = 'sm' }: BadgeP
             height: 6,
             borderRadius: '50%',
             background: color,
-            animation: label.toLowerCase() === 'thinking' ? 'pulse 1.5s ease-in-out infinite' : 'none',
+            animation: (label || '').toLowerCase() === 'thinking' ? 'pulse 1.5s ease-in-out infinite' : 'none',
           }}
         />
       )}
-      {variant === 'trust' && value !== undefined ? `${value}%` : label}
+      {displayText}
     </span>
   );
 }

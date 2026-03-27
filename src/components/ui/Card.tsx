@@ -5,6 +5,7 @@ interface CardProps {
   glow?: boolean;
   padding?: string;
   children: React.ReactNode;
+  className?: string;
   style?: React.CSSProperties;
   onClick?: () => void;
 }
@@ -14,6 +15,7 @@ export function Card({
   glow = false,
   padding = '16px',
   children,
+  className,
   style,
   onClick,
 }: CardProps) {
@@ -32,6 +34,7 @@ export function Card({
 
   return (
     <div
+      className={className}
       style={baseStyle}
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}

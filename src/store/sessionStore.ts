@@ -1,118 +1,85 @@
-// Chat session state store
+/**
+ * Session store - manages auth state and per-role messages.
+ * Persists token to localStorage with try/catch.
+ */
 import { create } from 'zustand';
-import type { RoleSession, Message } from '../lib/roleConfig';
-import { gateway, GatewayError } from '../lib/gateway';
+import { localStore } from '@/lib/tauri-compat';
 
-interface SessionState {
-  sessions: Map<string, RoleSession>;
-  currentSessionId: string | null;
-  messages: Message[];
-  isAgentThinking: boolean;
-  error: string | null;
-
-  setCurrentSession: (sessionId: string | null) => void;
-  addMessage: (message: Message) => void;
-  setThinking: (thinking: boolean) => void;
-  clearSession: (sessionId: string) => void;
-  loadHistory: (sessionId: string) => Promise<void>;
-  getSession: (sessionId: string) => RoleSession | undefined;
-  registerSession: (session: RoleSession) => void;
+interface Message {
+  id: string;
+  role: 'user' | 'agent';
+  content: string;
+  timestamp: number;
+  metadata?: Record<string, unknown>;
 }
 
-export const useSessionStore = create<SessionState>((set, get) => ({
-  sessions: new Map(),
-  currentSessionId: null,
-  messages: [],
-  isAgentThinking: false,
-  error: null,
+interface SessionState {
+  token: string | null;
+  userId: string | null;
+  hireId: string | null;
+  roleName: string | null;
+  isAuthenticated: boolean;
+  messages: Record<string, Message[]>;
+  login: (token: string, userId: string) => void;
+  setActiveRole: (hireId: string, roleName: string) => void;
+  logout: () => void;
+  addMessage: (hireId: string, message: Message) => void;
+  clearMessages: (hireId: string) => void;
+  getMessages: (hireId: string) => Message[];
+}
 
-  setCurrentSession: (sessionId: string | null) => {
-    if (sessionId) {
-      const session = get().sessions.get(sessionId);
-      set({
-        currentSessionId: sessionId,
-        messages: session?.messages || [],
-      });
-    } else {
-      set({ currentSessionId: null, messages: [] });
-    }
+const MAX_MESSAGES_PER_ROLE = 100;
+
+export const useSession = create<SessionState>((set, get) => ({
+  token: localStore.get<string>('session_token'),
+  userId: localStore.get<string>('session_userId'),
+  hireId: null,
+  roleName: null,
+  isAuthenticated: localStore.get<string>('session_token') !== null,
+  messages: localStore.get<Record<string, Message[]>>('session_messages') || {},
+
+  login: (token: string, userId: string) => {
+    localStore.set('session_token', token);
+    localStore.set('session_userId', userId);
+    set({ token, userId, isAuthenticated: true });
   },
 
-  addMessage: (message: Message) => {
-    const { currentSessionId, sessions } = get();
-    const updatedMessages = [...get().messages, message];
-
-    if (currentSessionId) {
-      const session = sessions.get(currentSessionId);
-      if (session) {
-        const updatedSession = {
-          ...session,
-          messages: [...session.messages, message],
-        };
-        const updatedSessions = new Map(sessions);
-        updatedSessions.set(currentSessionId, updatedSession);
-        set({ messages: updatedMessages, sessions: updatedSessions });
-        return;
-      }
-    }
-
-    set({ messages: updatedMessages });
+  setActiveRole: (hireId: string, roleName: string) => {
+    set({ hireId, roleName });
   },
 
-  setThinking: (thinking: boolean) => {
-    set({ isAgentThinking: thinking });
+  logout: () => {
+    localStore.remove('session_token');
+    localStore.remove('session_userId');
+    set({
+      token: null,
+      userId: null,
+      hireId: null,
+      roleName: null,
+      isAuthenticated: false,
+    });
   },
 
-  clearSession: (sessionId: string) => {
-    const { sessions, currentSessionId } = get();
-    const updatedSessions = new Map(sessions);
-    updatedSessions.delete(sessionId);
-
-    if (currentSessionId === sessionId) {
-      set({
-        sessions: updatedSessions,
-        currentSessionId: null,
-        messages: [],
-        isAgentThinking: false,
-      });
-    } else {
-      set({ sessions: updatedSessions });
-    }
+  addMessage: (hireId: string, message: Message) => {
+    const current = get().messages;
+    const roleMessages = current[hireId] || [];
+    const updated = [...roleMessages, message].slice(-MAX_MESSAGES_PER_ROLE);
+    const newMessages = { ...current, [hireId]: updated };
+    localStore.set('session_messages', newMessages);
+    set({ messages: newMessages });
   },
 
-  loadHistory: async (sessionId: string) => {
-    try {
-      const messages = await gateway.sessions.getHistory(sessionId);
-      const { sessions } = get();
-      const session = sessions.get(sessionId);
-
-      if (session) {
-        const updatedSession = { ...session, messages };
-        const updatedSessions = new Map(sessions);
-        updatedSessions.set(sessionId, updatedSession);
-        set({ sessions: updatedSessions });
-
-        if (get().currentSessionId === sessionId) {
-          set({ messages });
-        }
-      }
-    } catch (err) {
-      const message =
-        err instanceof GatewayError ? err.message : 'Failed to load message history';
-      set({ error: message });
-      throw err;
-    }
+  clearMessages: (hireId: string) => {
+    const current = get().messages;
+    const newMessages = { ...current };
+    delete newMessages[hireId];
+    localStore.set('session_messages', newMessages);
+    set({ messages: newMessages });
   },
 
-  getSession: (sessionId: string) => {
-    return get().sessions.get(sessionId);
-  },
-
-  registerSession: (session: RoleSession) => {
-    const updatedSessions = new Map(get().sessions);
-    updatedSessions.set(session.sessionId, session);
-    set({ sessions: updatedSessions });
+  getMessages: (hireId: string) => {
+    return get().messages[hireId] || [];
   },
 }));
 
-export default useSessionStore;
+export default useSession;

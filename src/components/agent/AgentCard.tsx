@@ -1,31 +1,27 @@
-import { Badge } from '@/components/ui/Badge';
-import type { HiredRole } from '@/lib/roleConfig';
+import type { HiredRole } from '@/store/agentStore';
 
 interface AgentCardProps {
   role: HiredRole;
-  sessionActive?: boolean;
 }
 
-function getTierLabel(tier: string): string {
-  if (tier === 'professional') return 'PRO';
-  if (tier === 'enterprise') return 'ENT';
-  return 'FREE';
-}
-
-export function AgentCard({ role, sessionActive = false }: AgentCardProps) {
-  const status = sessionActive ? 'online' : 'offline';
+export function AgentCard({ role }: AgentCardProps) {
+  const badgeConfig = {
+    PLATINUM: { bg: 'rgba(0,212,255,0.15)', color: 'var(--color-ion-cyan)' },
+    GOLD: { bg: 'rgba(255,183,64,0.15)', color: '#FFB740' },
+    SILVER: { bg: 'rgba(192,200,216,0.15)', color: '#C0C8D8' },
+    BASIC: { bg: 'rgba(136,153,187,0.15)', color: 'var(--color-text-muted)' },
+  }[role.trustBadge];
 
   return (
     <div
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: 12,
+        gap: 10,
       }}
     >
       {/* Header row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        {/* Avatar */}
         <div
           style={{
             width: 40,
@@ -35,118 +31,62 @@ export function AgentCard({ role, sessionActive = false }: AgentCardProps) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '16px',
+            fontSize: 16,
             fontWeight: 800,
             color: '#fff',
             flexShrink: 0,
-            position: 'relative',
           }}
         >
-          {role.name.charAt(0).toUpperCase()}
-          {/* Status dot */}
-          <span
-            style={{
-              position: 'absolute',
-              bottom: -1,
-              right: -1,
-              width: 10,
-              height: 10,
-              borderRadius: '50%',
-              background: status === 'online' ? 'var(--color-success)' : 'var(--color-text-mid)',
-              border: '2px solid var(--color-dark-navy)',
-            }}
-          />
+          {role.roleName.charAt(0).toUpperCase()}
         </div>
 
-        {/* Name / persona */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '14px', fontWeight: 700, color: '#E8EDF5' }}>
-            {role.name}
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: '#fff',
+              fontFamily: 'var(--font-sans)',
+            }}
+          >
+            {role.roleName}
           </div>
           <div
             style={{
-              fontSize: '12px',
+              fontSize: 12,
               color: 'var(--color-text-muted)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
             }}
           >
-            {role.persona}
+            {role.roleCategory}
           </div>
         </div>
       </div>
 
-      {/* Badges */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-        <Badge variant="status" label={status} />
-        <Badge variant="tier" label={getTierLabel(role.tier)} />
-      </div>
-
-      {/* Capabilities */}
-      {role.capabilities.length > 0 && (
-        <div>
-          <div
-            style={{
-              fontSize: '10px',
-              fontWeight: 700,
-              color: 'var(--color-text-mid)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              marginBottom: 6,
-            }}
-          >
-            Capabilities
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-            {role.capabilities.slice(0, 5).map((cap) => (
-              <span
-                key={cap}
-                style={{
-                  fontSize: '10px',
-                  padding: '2px 8px',
-                  borderRadius: '100px',
-                  background: 'var(--color-surface-2)',
-                  color: 'var(--color-text-muted)',
-                  fontWeight: 500,
-                }}
-              >
-                {cap}
-              </span>
-            ))}
-            {role.capabilities.length > 5 && (
-              <span
-                style={{
-                  fontSize: '10px',
-                  padding: '2px 8px',
-                  borderRadius: '100px',
-                  background: 'var(--color-surface-2)',
-                  color: 'var(--color-text-mid)',
-                }}
-              >
-                +{role.capabilities.length - 5} more
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Session info */}
-      {sessionActive && (
-        <div
+      {/* Trust badge + score */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span
           style={{
-            fontSize: '11px',
-            color: 'var(--color-text-mid)',
-            fontFamily: 'var(--font-mono)',
+            fontSize: 10,
+            fontWeight: 700,
+            padding: '2px 10px',
+            borderRadius: 100,
+            background: badgeConfig.bg,
+            color: badgeConfig.color,
+            letterSpacing: '0.04em',
           }}
         >
-          Session active since{' '}
-          {new Date(role.hiredAt).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </div>
-      )}
+          {role.trustBadge}
+        </span>
+        <span
+          style={{
+            fontSize: 11,
+            fontFamily: 'var(--font-mono)',
+            color: 'var(--color-text-muted)',
+          }}
+        >
+          Trust: {role.trustScore}%
+        </span>
+      </div>
     </div>
   );
 }

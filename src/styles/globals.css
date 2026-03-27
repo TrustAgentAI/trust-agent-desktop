@@ -7,8 +7,11 @@
   --color-mid-blue: #1A3A6B;
   --color-text-mid: #2D4A7A;
   --color-text-muted: #8899BB;
+  --color-border-blue: #C5D5F0;
+  --color-light-blue-bg: #EBF2FF;
   --color-success: #00AA78;
   --color-error: #CC3333;
+  --color-white: #FFFFFF;
 
   /* Surfaces */
   --color-surface-1: #0F1D35;
@@ -19,6 +22,7 @@
   /* Typography */
   --font-sans: 'Manrope', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-primary: 'Manrope', sans-serif;
 
   /* Spacing */
   --radius-sm: 6px;
@@ -41,6 +45,12 @@
   padding: 0;
 }
 
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
 html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
@@ -50,14 +60,11 @@ html {
 body {
   font-family: var(--font-sans);
   background-color: var(--color-dark-navy);
-  color: #E8EDF5;
+  color: var(--color-white);
   line-height: 1.6;
-  overflow: hidden;
-  min-height: 100vh;
 }
 
 #root {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
@@ -69,7 +76,7 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--color-navy-2);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -114,6 +121,11 @@ code, pre {
   user-select: none;
 }
 
+/* Interactive element transitions */
+button, a, input, select, textarea {
+  transition: all 0.15s ease;
+}
+
 /* Utility */
 .text-muted {
   color: var(--color-text-muted);
@@ -123,7 +135,37 @@ code, pre {
   color: var(--color-text-mid);
 }
 
-/* Animations */
+/* ======================== */
+/* Animations               */
+/* ======================== */
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes voiceWave {
+  0% { height: 4px; }
+  50% { height: 20px; }
+  100% { height: 4px; }
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -134,11 +176,6 @@ code, pre {
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -147,4 +184,9 @@ code, pre {
 @keyframes waveform {
   0%, 100% { height: 4px; }
   50% { height: 18px; }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }

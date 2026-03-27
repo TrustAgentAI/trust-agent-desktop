@@ -1,7 +1,10 @@
-// WebSocket connection hook
+/**
+ * WebSocket connection hook.
+ * Uses the auth store token to connect.
+ */
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { wsClient } from '../lib/ws';
-import { useAuthStore } from '../store/authStore';
+import { wsClient } from '@/lib/ws';
+import { useAuthStore } from '@/store/authStore';
 
 interface UseWebSocketOptions {
   onAgentResponse?: (data: unknown) => void;
@@ -19,14 +22,14 @@ interface UseWebSocketReturn {
 }
 
 export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketReturn {
-  const sessionToken = useAuthStore((s) => s.sessionToken);
+  const token = useAuthStore((s) => s.token);
   const [isConnected, setIsConnected] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
   useEffect(() => {
-    if (!sessionToken) {
+    if (!token) {
       wsClient.disconnect();
       setIsConnected(false);
       return;
@@ -74,7 +77,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     wsClient.on('task-update', handleTaskUpdate);
     wsClient.on('session-end', handleSessionEnd);
 
-    wsClient.connect(sessionToken);
+    wsClient.connect(token);
 
     return () => {
       wsClient.off('connected', handleConnected);
@@ -87,7 +90,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       wsClient.off('session-end', handleSessionEnd);
       wsClient.disconnect();
     };
-  }, [sessionToken]);
+  }, [token]);
 
   const send = useCallback(
     (type: 'user-message' | 'start-session' | 'cancel-task', payload: unknown) => {

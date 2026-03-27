@@ -50,19 +50,14 @@ export function MessageInput({ onSend, disabled, onAttach, onVoiceToggle }: Mess
       onAttach();
       return;
     }
-    // Use Tauri file dialog if available
     try {
-      const { open } = await import('@tauri-apps/plugin-dialog');
-      const selected = await open({
-        multiple: false,
-        title: 'Attach File',
-      });
+      const { openFileDialog } = await import('@/lib/tauri-compat');
+      const selected = await openFileDialog();
       if (selected) {
-        const path = typeof selected === 'string' ? selected : String(selected);
-        setValue((v) => v + `\n[Attached: ${path}]`);
+        setValue((v) => v + `\n[Attached: ${selected}]`);
       }
     } catch {
-      // Not in Tauri context or dialog cancelled
+      // Dialog cancelled or not available
     }
   };
 

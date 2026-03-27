@@ -1,6 +1,6 @@
 import React from 'react';
-import { getCurrentWindow } from '@tauri-apps/api/window';
 import { PanelRightClose, PanelRightOpen, Minus, X } from 'lucide-react';
+import { isTauri, minimizeWindow, closeWindow } from '@/lib/tauri-compat';
 
 interface TitleBarProps {
   rightPanelOpen?: boolean;
@@ -11,21 +11,10 @@ export function TitleBar({ rightPanelOpen = true, onToggleRightPanel }: TitleBar
   const [closeHovered, setCloseHovered] = React.useState(false);
   const [minHovered, setMinHovered] = React.useState(false);
 
-  const handleMinimize = async () => {
-    try {
-      await getCurrentWindow().minimize();
-    } catch {
-      // Not in Tauri context
-    }
-  };
-
-  const handleClose = async () => {
-    try {
-      await getCurrentWindow().close();
-    } catch {
-      // Not in Tauri context
-    }
-  };
+  // Hide the custom title bar in browser mode
+  if (!isTauri()) {
+    return null;
+  }
 
   return (
     <div
@@ -34,16 +23,16 @@ export function TitleBar({ rightPanelOpen = true, onToggleRightPanel }: TitleBar
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        height: 38,
-        minHeight: 38,
-        background: 'var(--color-dark-navy)',
+        height: 44,
+        minHeight: 44,
+        background: 'var(--color-navy-2)',
         borderBottom: '1px solid var(--color-border)',
         paddingLeft: 16,
         paddingRight: 4,
         zIndex: 100,
       }}
     >
-      {/* Left: wordmark */}
+      {/* Left: wordmark + version */}
       <div
         data-tauri-drag-region
         style={{
@@ -103,7 +92,7 @@ export function TitleBar({ rightPanelOpen = true, onToggleRightPanel }: TitleBar
           </button>
         )}
         <button
-          onClick={handleMinimize}
+          onClick={() => minimizeWindow()}
           onMouseEnter={() => setMinHovered(true)}
           onMouseLeave={() => setMinHovered(false)}
           style={{
@@ -123,7 +112,7 @@ export function TitleBar({ rightPanelOpen = true, onToggleRightPanel }: TitleBar
           <Minus size={14} />
         </button>
         <button
-          onClick={handleClose}
+          onClick={() => closeWindow()}
           onMouseEnter={() => setCloseHovered(true)}
           onMouseLeave={() => setCloseHovered(false)}
           style={{
