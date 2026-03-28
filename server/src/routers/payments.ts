@@ -4,9 +4,9 @@ import { router, publicProcedure, protectedProcedure } from '../trpc';
 import Stripe from 'stripe';
 import { PLAN_LIMITS } from '../lib/plan-limits';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-04-10',
-});
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-04-10' })
+  : null;
 
 const PLAN_PRICE_IDS: Record<string, string> = {
   STARTER: process.env.STRIPE_PRICE_STARTER || '',

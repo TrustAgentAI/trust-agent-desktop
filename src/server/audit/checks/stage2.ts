@@ -17,7 +17,7 @@ type CheckFn = (role: RoleDefinition) => CheckResult;
 function promptContains(
   prompt: string,
   keywords: string[],
-  minRequired: number
+  _minRequired: number
 ): { found: string[]; missing: string[]; ratio: number } {
   const lower = prompt.toLowerCase();
   const found: string[] = [];

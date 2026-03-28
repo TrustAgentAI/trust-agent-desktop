@@ -18,6 +18,10 @@ import { PrismaClient, BadgeTier, RoleType, UserPlan } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const prisma = new PrismaClient();
 

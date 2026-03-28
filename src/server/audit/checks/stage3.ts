@@ -3,7 +3,7 @@
 // Stage 3: Documentation Quality (10 checks)
 // ============================================================================
 
-import { CheckResult, RoleDefinition, VALID_CATEGORIES } from '../types';
+import { CheckResult, RoleDefinition } from '../types';
 
 type CheckFn = (role: RoleDefinition) => CheckResult;
 
