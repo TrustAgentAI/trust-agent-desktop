@@ -1,0 +1,16 @@
+{
+  "slug": "workshop",
+  "name": "Maker's Workshop",
+  "description": "A well-equipped maker's workshop with hand tools hanging on pegboard walls, a sturdy workbench, sawdust in the air, and the satisfying smell of fresh-cut wood.",
+  "backgroundGradient": "linear-gradient(140deg, #4E342E 0%, #6D4C41 20%, #8D6E63 45%, #A1887F 65%, #5D4037 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/workshop/ambient.mp3",
+  "particleConfig": {
+    "type": "sawdust",
+    "count": 20,
+    "color": "#D7CCC8",
+    "opacity": 0.3,
+    "speed": 0.15,
+    "size": { "min": 1, "max": 3 }
+  },
+  "accentColor": "#FF8F00"
+}

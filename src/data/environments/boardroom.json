@@ -1,0 +1,16 @@
+{
+  "slug": "boardroom",
+  "name": "Modern Boardroom",
+  "description": "A sleek glass-walled boardroom with a long polished table, ergonomic chairs, a presentation screen, and the quiet confidence of a well-run organisation.",
+  "backgroundGradient": "linear-gradient(160deg, #263238 0%, #37474F 20%, #455A64 40%, #546E7A 60%, #37474F 80%, #263238 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/boardroom/ambient.mp3",
+  "particleConfig": {
+    "type": "light-streaks",
+    "count": 6,
+    "color": "#FFFFFF",
+    "opacity": 0.1,
+    "speed": 0.05,
+    "size": { "min": 3, "max": 8 }
+  },
+  "accentColor": "#78909C"
+}

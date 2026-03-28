@@ -1,0 +1,16 @@
+{
+  "slug": "space-nebula",
+  "name": "Nebula",
+  "description": "Deep within a stellar nebula, vast clouds of ionised gas glow in vivid purples, magentas, and teals, with newborn stars flickering at their cores.",
+  "backgroundGradient": "linear-gradient(135deg, #1A0033 0%, #4A148C 20%, #880E4F 45%, #311B92 65%, #0D0D2B 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/space-nebula/ambient.mp3",
+  "particleConfig": {
+    "type": "cosmic-dust",
+    "count": 60,
+    "color": "#EA80FC",
+    "opacity": 0.35,
+    "speed": 0.08,
+    "size": { "min": 1, "max": 5 }
+  },
+  "accentColor": "#EA80FC"
+}

@@ -1,0 +1,16 @@
+{
+  "slug": "music-room",
+  "name": "Music Practice Room",
+  "description": "An acoustically treated music room with a grand piano, warm wood panelling, soft spotlights, and the gentle resonance of strings hanging in the air.",
+  "backgroundGradient": "linear-gradient(155deg, #1A1A2E 0%, #2D1B4E 25%, #4A148C 50%, #311B92 75%, #1A1A2E 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/music-room/ambient.mp3",
+  "particleConfig": {
+    "type": "notes",
+    "count": 12,
+    "color": "#CE93D8",
+    "opacity": 0.3,
+    "speed": 0.2,
+    "size": { "min": 4, "max": 10 }
+  },
+  "accentColor": "#AB47BC"
+}

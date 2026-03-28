@@ -1,0 +1,16 @@
+{
+  "slug": "spa-calm",
+  "name": "Spa Treatment Room",
+  "description": "A serene spa treatment room with warm stone walls, flickering candles, the scent of eucalyptus and lavender, soft flowing water sounds, and a heated massage table.",
+  "backgroundGradient": "linear-gradient(160deg, #37474F 0%, #455A64 20%, #78909C 40%, #B0BEC5 60%, #CFD8DC 80%, #546E7A 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/spa-calm/ambient.mp3",
+  "particleConfig": {
+    "type": "candle-flicker",
+    "count": 8,
+    "color": "#FFAB40",
+    "opacity": 0.35,
+    "speed": 0.15,
+    "size": { "min": 3, "max": 7 }
+  },
+  "accentColor": "#80CBC4"
+}

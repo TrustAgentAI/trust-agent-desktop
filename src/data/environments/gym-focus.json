@@ -1,0 +1,16 @@
+{
+  "slug": "gym-focus",
+  "name": "Focus Gym",
+  "description": "A modern training facility with mirrored walls, clean equipment, motivational lighting, upbeat energy, and the distant clink of weights.",
+  "backgroundGradient": "linear-gradient(165deg, #1A1A2E 0%, #212121 25%, #424242 45%, #E53935 65%, #B71C1C 85%, #1A1A2E 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/gym-focus/ambient.mp3",
+  "particleConfig": {
+    "type": "energy",
+    "count": 15,
+    "color": "#FF5252",
+    "opacity": 0.3,
+    "speed": 0.5,
+    "size": { "min": 2, "max": 5 }
+  },
+  "accentColor": "#FF1744"
+}

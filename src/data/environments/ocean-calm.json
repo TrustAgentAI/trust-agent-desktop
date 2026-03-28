@@ -1,0 +1,16 @@
+{
+  "slug": "ocean-calm",
+  "name": "Calm Ocean Waves",
+  "description": "A peaceful shoreline at golden hour, gentle waves lapping against warm sand, distant seagulls, and a vast horizon where sky meets sea.",
+  "backgroundGradient": "linear-gradient(180deg, #0288D1 0%, #0277BD 25%, #01579B 50%, #004D73 75%, #1A237E 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/ocean-calm/ambient.mp3",
+  "particleConfig": {
+    "type": "bubbles",
+    "count": 12,
+    "color": "#B3E5FC",
+    "opacity": 0.3,
+    "speed": 0.2,
+    "size": { "min": 2, "max": 6 }
+  },
+  "accentColor": "#29B6F6"
+}

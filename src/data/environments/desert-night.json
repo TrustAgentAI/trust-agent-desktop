@@ -1,0 +1,16 @@
+{
+  "slug": "desert-night",
+  "name": "Desert Night Sky",
+  "description": "A vast desert under a star-filled sky, warm sand cooling in the night air, the Milky Way stretching overhead, and absolute silence broken only by a distant coyote.",
+  "backgroundGradient": "linear-gradient(180deg, #0D0D2B 0%, #1A1A4E 25%, #2E1065 50%, #1A0A3E 75%, #0A0A1A 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/desert-night/ambient.mp3",
+  "particleConfig": {
+    "type": "stars",
+    "count": 80,
+    "color": "#FFFFFF",
+    "opacity": 0.7,
+    "speed": 0.02,
+    "size": { "min": 1, "max": 3 }
+  },
+  "accentColor": "#CE93D8"
+}

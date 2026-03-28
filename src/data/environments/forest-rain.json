@@ -1,0 +1,16 @@
+{
+  "slug": "forest-rain",
+  "name": "Rainforest",
+  "description": "A dense tropical rainforest alive with the chorus of exotic birds, dripping leaves, warm humidity, and shafts of green-tinged light piercing the canopy.",
+  "backgroundGradient": "linear-gradient(155deg, #004D40 0%, #00695C 25%, #00897B 50%, #004D40 80%, #002622 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/forest-rain/ambient.mp3",
+  "particleConfig": {
+    "type": "rain",
+    "count": 50,
+    "color": "#B2DFDB",
+    "opacity": 0.3,
+    "speed": 1.2,
+    "size": { "min": 1, "max": 2 }
+  },
+  "accentColor": "#26A69A"
+}

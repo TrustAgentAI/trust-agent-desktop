@@ -1,0 +1,16 @@
+{
+  "slug": "arctic-aurora",
+  "name": "Northern Lights",
+  "description": "An Arctic landscape under dancing aurora borealis, shimmering curtains of green and violet light rippling across a star-studded sky above a frozen tundra.",
+  "backgroundGradient": "linear-gradient(170deg, #0D1B2A 0%, #1B2838 20%, #004D40 45%, #1B5E20 60%, #0D47A1 80%, #0D1B2A 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/arctic-aurora/ambient.mp3",
+  "particleConfig": {
+    "type": "aurora-shimmer",
+    "count": 15,
+    "color": "#69F0AE",
+    "opacity": 0.4,
+    "speed": 0.3,
+    "size": { "min": 10, "max": 40 }
+  },
+  "accentColor": "#69F0AE"
+}

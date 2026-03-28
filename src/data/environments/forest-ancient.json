@@ -1,0 +1,16 @@
+{
+  "slug": "forest-ancient",
+  "name": "Ancient Forest",
+  "description": "A primeval forest of towering oaks and redwoods, dappled sunlight through a dense canopy, moss-covered roots, and the distant call of woodland birds.",
+  "backgroundGradient": "linear-gradient(160deg, #1B5E20 0%, #2E7D32 25%, #1B3A1B 55%, #0D2818 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/forest-ancient/ambient.mp3",
+  "particleConfig": {
+    "type": "fireflies",
+    "count": 25,
+    "color": "#C8E6C9",
+    "opacity": 0.5,
+    "speed": 0.2,
+    "size": { "min": 2, "max": 5 }
+  },
+  "accentColor": "#66BB6A"
+}

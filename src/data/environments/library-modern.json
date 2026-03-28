@@ -1,0 +1,16 @@
+{
+  "slug": "library-modern",
+  "name": "Modern Glass Library",
+  "description": "A contemporary library with floor-to-ceiling glass walls, sleek white shelving, minimalist seating, and soft diffused daylight streaming through frosted panels.",
+  "backgroundGradient": "linear-gradient(160deg, #ECEFF1 0%, #CFD8DC 25%, #B0BEC5 55%, #90A4AE 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/library-modern/ambient.mp3",
+  "particleConfig": {
+    "type": "light-streaks",
+    "count": 10,
+    "color": "#FFFFFF",
+    "opacity": 0.15,
+    "speed": 0.1,
+    "size": { "min": 2, "max": 6 }
+  },
+  "accentColor": "#546E7A"
+}

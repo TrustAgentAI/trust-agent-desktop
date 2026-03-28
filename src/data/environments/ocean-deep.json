@@ -1,0 +1,16 @@
+{
+  "slug": "ocean-deep",
+  "name": "Deep Underwater",
+  "description": "The dark blue depths of the open ocean, bioluminescent creatures drifting past, shafts of light filtering down from far above, and the deep hum of the abyss.",
+  "backgroundGradient": "linear-gradient(180deg, #0D47A1 0%, #0A2463 30%, #051937 60%, #020C1B 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/ocean-deep/ambient.mp3",
+  "particleConfig": {
+    "type": "bioluminescence",
+    "count": 30,
+    "color": "#00E5FF",
+    "opacity": 0.5,
+    "speed": 0.15,
+    "size": { "min": 1, "max": 4 }
+  },
+  "accentColor": "#00B8D4"
+}

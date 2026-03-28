@@ -1,0 +1,16 @@
+{
+  "slug": "library-oak",
+  "name": "Warm Oak Library",
+  "description": "A grand oak-panelled library with leather armchairs, warm lamplight, and floor-to-ceiling bookshelves. The scent of aged paper and polished wood fills the air.",
+  "backgroundGradient": "linear-gradient(135deg, #3E2723 0%, #5D4037 30%, #8D6E63 60%, #4E342E 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/library-oak/ambient.mp3",
+  "particleConfig": {
+    "type": "dust",
+    "count": 25,
+    "color": "#D7CCC8",
+    "opacity": 0.3,
+    "speed": 0.2,
+    "size": { "min": 1, "max": 3 }
+  },
+  "accentColor": "#A1887F"
+}

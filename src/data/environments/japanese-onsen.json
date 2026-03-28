@@ -1,0 +1,16 @@
+{
+  "slug": "japanese-onsen",
+  "name": "Hot Spring",
+  "description": "An outdoor Japanese hot spring surrounded by smooth river stones and bamboo screens, rising steam catching the moonlight, and the soothing sound of flowing water.",
+  "backgroundGradient": "linear-gradient(170deg, #1A237E 0%, #283593 20%, #455A64 50%, #607D8B 70%, #37474F 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/japanese-onsen/ambient.mp3",
+  "particleConfig": {
+    "type": "steam",
+    "count": 25,
+    "color": "#CFD8DC",
+    "opacity": 0.3,
+    "speed": 0.3,
+    "size": { "min": 5, "max": 15 }
+  },
+  "accentColor": "#7986CB"
+}

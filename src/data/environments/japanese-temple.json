@@ -1,0 +1,16 @@
+{
+  "slug": "japanese-temple",
+  "name": "Temple Garden",
+  "description": "A tranquil Japanese temple garden with a koi pond, stone lanterns, carefully pruned bonsai, the deep resonance of a temple bell, and maple leaves drifting on still water.",
+  "backgroundGradient": "linear-gradient(145deg, #1B3A2D 0%, #2E4A3E 25%, #4E6B5C 50%, #8D6E63 75%, #3E2723 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/japanese-temple/ambient.mp3",
+  "particleConfig": {
+    "type": "leaves",
+    "count": 12,
+    "color": "#E57373",
+    "opacity": 0.45,
+    "speed": 0.2,
+    "size": { "min": 5, "max": 12 }
+  },
+  "accentColor": "#EF5350"
+}

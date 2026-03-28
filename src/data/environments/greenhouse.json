@@ -1,0 +1,16 @@
+{
+  "slug": "greenhouse",
+  "name": "Victorian Greenhouse",
+  "description": "A grand Victorian glasshouse filled with tropical plants, humidity condensing on wrought-iron framed panes, orchids in bloom, and warm filtered sunlight.",
+  "backgroundGradient": "linear-gradient(160deg, #1B5E20 0%, #2E7D32 20%, #4CAF50 40%, #81C784 60%, #C8E6C9 80%, #388E3C 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/greenhouse/ambient.mp3",
+  "particleConfig": {
+    "type": "pollen",
+    "count": 18,
+    "color": "#FFEE58",
+    "opacity": 0.3,
+    "speed": 0.12,
+    "size": { "min": 1, "max": 3 }
+  },
+  "accentColor": "#4CAF50"
+}

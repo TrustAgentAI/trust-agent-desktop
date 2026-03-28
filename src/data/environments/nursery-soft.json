@@ -1,0 +1,16 @@
+{
+  "slug": "nursery-soft",
+  "name": "Soft Nursery",
+  "description": "A gentle nursery with soft pastel walls, plush toys on shelves, a rocking chair, a warm nightlight casting a golden glow, and the faintest melody of a music box.",
+  "backgroundGradient": "linear-gradient(155deg, #F3E5F5 0%, #E1BEE7 20%, #CE93D8 40%, #F8BBD0 60%, #FCE4EC 80%, #F3E5F5 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/nursery-soft/ambient.mp3",
+  "particleConfig": {
+    "type": "sparkle",
+    "count": 10,
+    "color": "#F8BBD0",
+    "opacity": 0.3,
+    "speed": 0.1,
+    "size": { "min": 2, "max": 5 }
+  },
+  "accentColor": "#F48FB1"
+}

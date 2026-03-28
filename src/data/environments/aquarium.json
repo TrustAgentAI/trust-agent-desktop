@@ -1,0 +1,16 @@
+{
+  "slug": "aquarium",
+  "name": "Large Aquarium",
+  "description": "Standing before a vast floor-to-ceiling aquarium, watching rays and tropical fish glide through blue-lit water, coral formations casting gentle shadows.",
+  "backgroundGradient": "linear-gradient(180deg, #006064 0%, #00838F 25%, #0097A7 45%, #00695C 70%, #004D40 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/aquarium/ambient.mp3",
+  "particleConfig": {
+    "type": "bubbles",
+    "count": 30,
+    "color": "#B2EBF2",
+    "opacity": 0.4,
+    "speed": 0.3,
+    "size": { "min": 2, "max": 8 }
+  },
+  "accentColor": "#00BCD4"
+}

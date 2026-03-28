@@ -1,0 +1,16 @@
+{
+  "slug": "coffee-shop",
+  "name": "Busy Coffee Shop",
+  "description": "A bustling independent coffee shop with exposed brick walls, steaming espresso machines, mismatched furniture, and the gentle hum of conversation.",
+  "backgroundGradient": "linear-gradient(145deg, #4E342E 0%, #6D4C41 30%, #795548 55%, #3E2723 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/coffee-shop/ambient.mp3",
+  "particleConfig": {
+    "type": "steam",
+    "count": 15,
+    "color": "#D7CCC8",
+    "opacity": 0.25,
+    "speed": 0.4,
+    "size": { "min": 3, "max": 8 }
+  },
+  "accentColor": "#8D6E63"
+}

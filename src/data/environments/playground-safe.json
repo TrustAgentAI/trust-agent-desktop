@@ -1,0 +1,16 @@
+{
+  "slug": "playground-safe",
+  "name": "Safe Playground",
+  "description": "A bright and cheerful fenced playground with colourful climbing frames, rubber-safe flooring, friendly animal murals on the walls, and children's laughter in the distance.",
+  "backgroundGradient": "linear-gradient(145deg, #81D4FA 0%, #4FC3F7 20%, #29B6F6 35%, #66BB6A 55%, #FFF176 75%, #FF8A65 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/playground-safe/ambient.mp3",
+  "particleConfig": {
+    "type": "confetti",
+    "count": 20,
+    "color": "#FF8A65",
+    "opacity": 0.4,
+    "speed": 0.3,
+    "size": { "min": 3, "max": 8 }
+  },
+  "accentColor": "#4FC3F7"
+}

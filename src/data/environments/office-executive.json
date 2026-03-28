@@ -1,0 +1,16 @@
+{
+  "slug": "office-executive",
+  "name": "Executive Office",
+  "description": "A prestigious corner office with mahogany furnishings, a panoramic city view, leather-bound books, subtle ambient lighting, and an air of quiet authority.",
+  "backgroundGradient": "linear-gradient(155deg, #1A237E 0%, #283593 20%, #303F9F 40%, #3E2723 60%, #4E342E 80%, #1A1A2E 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/office-executive/ambient.mp3",
+  "particleConfig": {
+    "type": "dust",
+    "count": 8,
+    "color": "#C5CAE9",
+    "opacity": 0.15,
+    "speed": 0.08,
+    "size": { "min": 1, "max": 3 }
+  },
+  "accentColor": "#5C6BC0"
+}

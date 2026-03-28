@@ -1,0 +1,16 @@
+{
+  "slug": "art-studio",
+  "name": "Artist's Studio",
+  "description": "A light-flooded artist's loft with paint-splattered wooden floors, large canvases, the smell of turpentine and linseed oil, and natural north-facing light.",
+  "backgroundGradient": "linear-gradient(145deg, #F5F5F5 0%, #E0E0E0 20%, #FF7043 40%, #7E57C2 60%, #42A5F5 80%, #BDBDBD 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/art-studio/ambient.mp3",
+  "particleConfig": {
+    "type": "paint-specks",
+    "count": 18,
+    "color": "#FF7043",
+    "opacity": 0.3,
+    "speed": 0.1,
+    "size": { "min": 2, "max": 6 }
+  },
+  "accentColor": "#FF7043"
+}

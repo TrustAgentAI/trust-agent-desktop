@@ -1,0 +1,16 @@
+{
+  "slug": "innovation-lab",
+  "name": "Tech Innovation Lab",
+  "description": "A cutting-edge tech lab with 3D printers, holographic displays, circuit boards on workbenches, LED strip lighting, and the hum of innovation in progress.",
+  "backgroundGradient": "linear-gradient(150deg, #0D0D2B 0%, #1A1A3E 20%, #0D47A1 40%, #00BCD4 55%, #1DE9B6 70%, #0D0D2B 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/innovation-lab/ambient.mp3",
+  "particleConfig": {
+    "type": "data-stream",
+    "count": 35,
+    "color": "#00E5FF",
+    "opacity": 0.4,
+    "speed": 0.6,
+    "size": { "min": 1, "max": 3 }
+  },
+  "accentColor": "#00E5FF"
+}

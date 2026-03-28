@@ -1,0 +1,16 @@
+{
+  "slug": "cityscape-rain",
+  "name": "Rainy City",
+  "description": "A rain-soaked city street at dusk, neon reflections shimmering in puddles, the rhythmic patter of rain on awnings, and the warm glow of shop windows.",
+  "backgroundGradient": "linear-gradient(170deg, #1A1A2E 0%, #263238 25%, #37474F 50%, #455A64 70%, #1A1A2E 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/cityscape-rain/ambient.mp3",
+  "particleConfig": {
+    "type": "rain",
+    "count": 80,
+    "color": "#90CAF9",
+    "opacity": 0.25,
+    "speed": 1.5,
+    "size": { "min": 1, "max": 2 }
+  },
+  "accentColor": "#64B5F6"
+}

@@ -1,0 +1,963 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// USERS AND ACCOUNTS
+// ════════════════════════════════════════════════════════════════════════════
+
+model User {
+  id                String      @id @default(cuid())
+  email             String      @unique
+  emailVerified     DateTime?
+  passwordHash      String?
+  name              String?
+  avatarUrl         String?
+  plan              UserPlan    @default(FREE)
+  accountType       AccountType @default(INDIVIDUAL)
+  apiKey            String?     @unique @default(cuid()) // ta_live_{cuid}
+  tagntBalance      Int         @default(0)  // $TAGNT credits in pence-equivalent
+  referralCode      String      @unique @default(cuid())
+  referredBy        String?
+  onboardingDone    Boolean     @default(false)
+  cloudDriveType    CloudDriveType?  // REQUIRED before first hire
+  cloudDriveToken   String?     @db.Text  // Encrypted OAuth token
+  cloudDriveFolderId String?    // Folder ID in user's drive for Brain files
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  preferences       UserPreferences?
+  subscription      Subscription?
+  hires             Hire[]
+  sessions          AgentSession[]
+  brainSyncLogs     BrainSyncLog[]
+  voiceClones       UserVoiceClone[]
+  notifications     Notification[]
+  familyLinks       FamilyLink[]     @relation("guardian")
+  guardedBy         FamilyLink[]     @relation("child")
+  enterprise        EnterpriseUser?
+  creatorProfile    CreatorProfile?
+  payments          Payment[]
+  giftsSent         GiftSubscription[] @relation("sender")
+  giftsReceived     GiftSubscription[] @relation("recipient")
+  tokenStakes       TokenStake[]
+  nhsActivations    NHSReferralActivation[]
+  schoolEnrolments  StudentEnrolment[]
+  hardwareDevices   HardwareDevice[]
+  progressReports   ProgressReport[]
+  schedules         SessionSchedule[]
+  wellbeingSignals  WellbeingSignal[]
+
+  @@index([email])
+  @@index([apiKey])
+  @@index([referralCode])
+}
+
+enum UserPlan {
+  FREE
+  STARTER        // £9.99/mo - 1 role
+  ESSENTIAL      // £19.99/mo - 3 roles
+  FAMILY         // £24.99/mo - 5 roles + 2 child profiles
+  PROFESSIONAL   // £39.99/mo - 10 roles
+  ENTERPRISE     // Custom
+}
+
+enum AccountType {
+  INDIVIDUAL
+  CHILD          // Requires guardian link
+  ENTERPRISE
+  CREATOR
+}
+
+enum CloudDriveType {
+  GOOGLE_DRIVE
+  ICLOUD
+  ONEDRIVE
+}
+
+model UserPreferences {
+  id                      String   @id @default(cuid())
+  userId                  String   @unique
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ambientAudioEnabled     Boolean  @default(true)
+  voiceEnabled            Boolean  @default(true)
+  voiceTier               VoiceTier @default(CURATED)
+  selectedVoiceId         String?  // ElevenLabs voice ID
+  environmentTheme        String   @default("auto")
+  sessionReminderMins     Int      @default(45)
+  notifyGuardianOnSession Boolean  @default(true)
+  highContrastMode        Boolean  @default(false)
+  dyslexiaMode            Boolean  @default(false)
+  fontSize                String   @default("standard") // standard | large | xlarge
+  calmMode                Boolean  @default(false)      // Neurodivergent calm mode
+  adhdMode                Boolean  @default(false)
+  translationEnabled      Boolean  @default(false)
+  preferredLanguage       String   @default("en")
+  wearableConnected       Boolean  @default(false)
+  wearablePlatform        String?  // apple_health | google_fit | samsung_health
+  updatedAt               DateTime @updatedAt
+}
+
+enum VoiceTier {
+  CURATED        // ElevenLabs library voices
+  CLONED         // User-created voice clone
+  TEXT_ONLY      // No TTS - read-aloud mode
+}
+
+model UserVoiceClone {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String   // e.g. "Grandma Joyce"
+  elevenLabsId    String   // ElevenLabs voice clone ID
+  consentRecorded Boolean  @default(false)  // Consent confirmed in UI
+  consentAt       DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+}
+
+model FamilyLink {
+  id            String   @id @default(cuid())
+  guardianId    String
+  childId       String
+  guardian      User     @relation("guardian", fields: [guardianId], references: [id])
+  child         User     @relation("child", fields: [childId], references: [id])
+  maxDailyMins  Int      @default(45)  // Guardian-configurable session limit
+  createdAt     DateTime @default(now())
+
+  guardianAlerts GuardianAlert[]
+
+  @@unique([guardianId, childId])
+  @@index([guardianId])
+  @@index([childId])
+}
+
+model GuardianAlert {
+  id            String   @id @default(cuid())
+  familyLinkId  String
+  familyLink    FamilyLink @relation(fields: [familyLinkId], references: [id])
+  type          String   // topic_flagged | session_limit_reached | wellbeing_concern
+  message       String   @db.Text
+  hireId        String?
+  readAt        DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([familyLinkId])
+}
+
+model WellbeingSignal {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  hireId      String
+  score       Int      // 0-100 wellbeing score
+  trend       String   // improving | stable | declining
+  signals     Json     // structured signal data from Brain
+  alertSent   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([hireId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// BRAIN ARCHITECTURE
+// Brain data NEVER stored here - only sync metadata
+// ════════════════════════════════════════════════════════════════════════════
+
+model BrainSyncLog {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  hireId          String
+  cloudDriveType  CloudDriveType
+  fileId          String   // File ID in user's cloud drive
+  fileSizeBytes   Int
+  syncStatus      String   // success | failed | conflict
+  errorMessage    String?
+  syncedAt        DateTime @default(now())
+
+  @@index([userId])
+  @@index([hireId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ENTERPRISE
+// ════════════════════════════════════════════════════════════════════════════
+
+model EnterpriseUser {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+  companyName     String
+  companySize     String?
+  industry        String?
+  billingEmail    String
+  maxSeats        Int      @default(5)
+  ssoEnabled      Boolean  @default(false)
+  samlMetadata    String?  @db.Text
+  createdAt       DateTime @default(now())
+
+  companyBrain    CompanyBrain?
+  seats           EnterpriseSeat[]
+}
+
+model EnterpriseSeat {
+  id             String        @id @default(cuid())
+  enterpriseId   String
+  enterprise     EnterpriseUser @relation(fields: [enterpriseId], references: [id])
+  email          String
+  role           String        @default("member") // member | admin
+  invitedAt      DateTime      @default(now())
+  acceptedAt     DateTime?
+
+  @@index([enterpriseId])
+}
+
+model CompanyBrain {
+  id               String        @id @default(cuid())
+  enterpriseId     String        @unique
+  enterprise       EnterpriseUser @relation(fields: [enterpriseId], references: [id])
+  // Static context - injected on every invocation (~1500-2000 tokens)
+  companyName      String
+  companyDescription String      @db.Text
+  industry         String?
+  companySize      String?
+  currentOKRs      String        @db.Text
+  brandVoice       String        @db.Text
+  targetCustomers  String        @db.Text
+  topCompetitors   String        @db.Text
+  keyPeople        String        @db.Text
+  topicsToAvoid    String        @db.Text
+  // Dynamic RAG config - customer's own vector DB
+  vectorDbProvider String?       // pgvector | pinecone | weaviate | qdrant
+  vectorDbUrl      String?       @db.Text  // Encrypted
+  vectorDbApiKey   String?       @db.Text  // Encrypted
+  vectorDbIndex    String?
+  ragEnabled       Boolean       @default(false)
+  updatedAt        DateTime      @updatedAt
+
+  hitlRules        HITLRule[]
+}
+
+model HITLRule {
+  id             String      @id @default(cuid())
+  companyBrainId String
+  companyBrain   CompanyBrain @relation(fields: [companyBrainId], references: [id])
+  triggerPattern String      // regex or keyword pattern
+  action         String      // pause | block | escalate
+  notifyEmail    String?
+  createdAt      DateTime    @default(now())
+
+  @@index([companyBrainId])
+}
+
+model HITLEvent {
+  id          String   @id @default(cuid())
+  sessionId   String
+  ruleId      String
+  inputSample String   @db.Text  // First 200 chars only - not full message
+  action      String
+  resolvedBy  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([sessionId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ROLES AND MARKETPLACE
+// ════════════════════════════════════════════════════════════════════════════
+
+model Role {
+  id                  String    @id @default(cuid())
+  slug                String    @unique  // e.g. gcse-maths-tutor-f
+  baseSlug            String    // e.g. gcse-maths-tutor (groups male/female)
+  gender              String    // f | m
+  name                String
+  companionName       String    // e.g. "Miss Davies" - overrideable per hire
+  category            String
+  subcategory         String?
+  tagline             String
+  description         String    @db.Text
+  systemPrompt        String    @db.Text   // NEVER sent to frontend
+  systemPromptHash    String    // SHA-256 - verified on every invocation
+  priceMonthly        Int       // pence
+  targetUser          String    @db.Text
+  capabilities        String[]
+  limitations         String[]
+  hardLimits          String[]
+  escalationTriggers  String[]
+  knowledgeSources    String[]
+  tags                String[]
+  languageCode        String?
+  languageName        String?
+  isActive            Boolean   @default(false)
+  publishedAt         DateTime?
+  isFeatured          Boolean   @default(false)
+  environmentSlug     String    // One of 38 environments
+  environmentConfig   Json      // SafeEnvironmentConfig - sent to frontend
+  // Accessibility
+  supportsVoice       Boolean   @default(true)
+  supportsTextOnly    Boolean   @default(true)
+  supportsWearable    Boolean   @default(false)
+  // Anti-dependency
+  maxSessionMinutes   Int       @default(90)
+  maxDailySessionMins Int?      // null = unlimited (adults). 45 for children.
+  // Subscription gating
+  requiredPlan        UserPlan  @default(STARTER)
+  // B2B marketplace
+  roleType            RoleType  @default(CONSUMER)
+  stakeRequired       Int       @default(0) // $TAGNT stake for B2B creators
+  creatorId           String?   // null = Trust Agent official roles
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  audit     RoleAudit?
+  hires     Hire[]
+  skills    RoleSkill[]
+  creator   CreatorProfile? @relation(fields: [creatorId], references: [id])
+
+  @@index([baseSlug])
+  @@index([category])
+  @@index([isActive])
+  @@index([roleType])
+  @@index([creatorId])
+}
+
+enum RoleType {
+  CONSUMER    // Consumer companion
+  B2B_CSUITE  // C-Suite - 10,000 $TAGNT stake
+  B2B_MGMT    // Management - 5,000 $TAGNT stake
+  B2B_SPEC    // Specialist - 2,000 $TAGNT stake
+  B2B_AGENT   // Agent - 1,000 $TAGNT stake
+  B2B_SKILL   // Skill module - 500 $TAGNT stake
+}
+
+model RoleSkill {
+  id             String  @id @default(cuid())
+  roleId         String
+  role           Role    @relation(fields: [roleId], references: [id])
+  skillSlug      String
+  skillName      String
+  injectionPoint String  @default("system")
+  priority       Int     @default(1)
+
+  @@index([roleId])
+}
+
+model Skill {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  description    String   @db.Text
+  systemFragment String   @db.Text  // NEVER sent to frontend
+  fragmentHash   String   // SHA-256
+  category       String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model RoleAudit {
+  id              String   @id @default(cuid())
+  roleId          String   @unique
+  role            Role     @relation(fields: [roleId], references: [id])
+  trustScore      Int      // 0-100
+  badge           BadgeTier
+  artefactHash    String   // SHA-256 of role config at audit time
+  auditReportKey  String   // S3 key (private bucket)
+  stage1Score     Int
+  stage1Passed    Int
+  stage1Failed    Int
+  stage2Score     Int
+  stage2Passed    Int
+  stage2Failed    Int
+  stage3Score     Int
+  stage3Passed    Int
+  stage3Failed    Int
+  communityScore  Int      @default(0)
+  totalScore      Int      // Weighted final Trust Score
+  auditedBy       String?  // Human expert name/ID (hashed)
+  completedAt     DateTime
+  expiresAt       DateTime // 6 months from audit date
+  createdAt       DateTime @default(now())
+
+  @@index([badge])
+  @@index([totalScore])
+}
+
+enum BadgeTier {
+  PLATINUM
+  GOLD
+  SILVER
+  BASIC
+  REJECTED
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// HIRES
+// ════════════════════════════════════════════════════════════════════════════
+
+model Hire {
+  id                  String      @id @default(cuid())
+  userId              String
+  user                User        @relation(fields: [userId], references: [id])
+  roleId              String
+  role                Role        @relation(fields: [roleId], references: [id])
+  status              HireStatus  @default(ACTIVE)
+  // Personalisation
+  customCompanionName String?     // Overrides Role.companionName
+  customVoiceCloneId  String?     // UserVoiceClone.id
+  customEnvironment   String?     // Override default environment
+  // Subscription
+  activatedAt         DateTime    @default(now())
+  expiresAt           DateTime?
+  priceMonthly        Int         // pence - locked at hire time
+  stripeSubId         String?     // Stripe subscription line item
+  // Brain
+  brainFileId         String?     // File ID in user's cloud drive
+  brainVersion        Int         @default(0)
+  lastBrainSync       DateTime?
+  sessionCount        Int         @default(0)
+  totalMinutes        Int         @default(0)
+  streakDays          Int         @default(0)
+  longestStreakDays    Int         @default(0)
+  lastSessionAt       DateTime?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  sessions      AgentSession[]
+  memory        SessionMemory?
+  milestones    HireMilestone[]
+  srItems       SpacedRepetitionItem[]
+  schedules     SessionSchedule[]
+  progressReports ProgressReport[]
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@index([status])
+}
+
+enum HireStatus {
+  ACTIVE
+  PAUSED          // Subscription lapsed - Brain preserved
+  CANCELLED
+  EXPIRED
+  GIFT_PENDING    // Gift hired but not yet activated
+}
+
+model HireMilestone {
+  id          String   @id @default(cuid())
+  hireId      String
+  hire        Hire     @relation(fields: [hireId], references: [id])
+  type        String   // first_session | session_10 | session_50 | streak_7 | etc
+  achievedAt  DateTime @default(now())
+  celebrated  Boolean  @default(false)
+
+  @@index([hireId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SESSIONS
+// ════════════════════════════════════════════════════════════════════════════
+
+model AgentSession {
+  id               String        @id @default(cuid())
+  userId           String
+  user             User          @relation(fields: [userId], references: [id])
+  hireId           String
+  hire             Hire          @relation(fields: [hireId], references: [id])
+  liveKitRoomId    String?
+  status           SessionStatus @default(ACTIVE)
+  inputMode        InputMode     @default(TEXT)
+  environmentSlug  String
+  // Session modes
+  examMode         Boolean       @default(false)
+  redTeamMode      Boolean       @default(false)
+  presenceMode     Boolean       @default(false)
+  timeBudgetMins   Int?          // Time-boxed session - null = unlimited
+  collaborationId  String?       // If multi-user session
+  // Metrics (no content)
+  startedAt        DateTime      @default(now())
+  endedAt          DateTime?
+  durationSeconds  Int?
+  messageCount     Int           @default(0)
+  deviceType       String?       // desktop | mobile | trustbox | truststick
+  // Anti-dependency tracking
+  sessionMinsToday Int           @default(0) // Running total for the day
+  dependencyFlag   Boolean       @default(false) // Flagged for high frequency
+  createdAt        DateTime      @default(now())
+
+  auditEvents      SessionAuditEvent[]
+  uploadedDocs     SessionDocument[]
+
+  @@index([userId])
+  @@index([hireId])
+  @@index([status])
+  @@index([startedAt])
+}
+
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+  ERROR
+}
+
+enum InputMode {
+  TEXT
+  VOICE
+  MIXED
+}
+
+model SessionDocument {
+  id          String   @id @default(cuid())
+  sessionId   String
+  session     AgentSession @relation(fields: [sessionId], references: [id])
+  s3Key       String   // S3 key in private bucket
+  fileName    String
+  mimeType    String
+  fileSizeBytes Int
+  extractedText String? @db.Text  // Extracted for context injection - deleted after session
+  uploadedAt  DateTime @default(now())
+
+  @@index([sessionId])
+}
+
+model SessionAuditEvent {
+  id          String   @id @default(cuid())
+  sessionId   String
+  session     AgentSession @relation(fields: [sessionId], references: [id])
+  checkId     String
+  outcome     String   // PASS | WARN | BLOCK
+  details     String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([checkId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SESSION MEMORY (Brain summaries - not raw messages)
+// ════════════════════════════════════════════════════════════════════════════
+
+model SessionMemory {
+  id              String   @id @default(cuid())
+  hireId          String   @unique
+  hire            Hire     @relation(fields: [hireId], references: [id])
+  // Structured summary - computed after each session, synced to Brain
+  memorySummary   Json     // BrainMemoryData type (see below)
+  lastUpdated     DateTime @default(now())
+  sessionCount    Int      @default(0)
+  totalMinutes    Int      @default(0)
+  // Wellbeing
+  wellbeingScore  Int      @default(75)
+  wellbeingTrend  String   @default("stable")
+  lastWellbeingAt DateTime?
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SPACED REPETITION
+// ════════════════════════════════════════════════════════════════════════════
+
+model SpacedRepetitionItem {
+  id          String   @id @default(cuid())
+  hireId      String
+  hire        Hire     @relation(fields: [hireId], references: [id])
+  concept     String
+  context     String   @db.Text
+  // SM-2 algorithm fields
+  easeFactor  Float    @default(2.5)
+  interval    Int      @default(1)     // days
+  repetitions Int      @default(0)
+  dueAt       DateTime @default(now())
+  lastReview  DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([hireId])
+  @@index([dueAt])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PROGRESS AND REPORTING
+// ════════════════════════════════════════════════════════════════════════════
+
+model LearnerProgressScore {
+  id               String   @id @default(cuid())
+  hireId           String   @unique
+  // Education
+  overallReadiness Int      @default(0)  // 0-100
+  topicScores      Json     // { topicSlug: score }
+  // Language
+  cefrLevel        String?
+  cefrConfidence   Int?     @default(0)
+  // Career
+  applicationScore Int      @default(0)
+  // General
+  engagementScore  Int      @default(0)
+  streakBonus      Int      @default(0)
+  updatedAt        DateTime @updatedAt
+}
+
+model ProgressReport {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  hireId      String
+  hire        Hire     @relation(fields: [hireId], references: [id])
+  reportType  String   // weekly | monthly | exam_ready | milestone
+  s3Key       String   // PDF stored in private S3 bucket
+  generatedAt DateTime @default(now())
+  sharedWith  String[] // Email addresses shared with (guardian, school)
+
+  @@index([userId])
+  @@index([hireId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SESSION SCHEDULING
+// ════════════════════════════════════════════════════════════════════════════
+
+model SessionSchedule {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  hireId          String
+  hire            Hire     @relation(fields: [hireId], references: [id])
+  dayOfWeek       Int[]    // 0=Sun..6=Sat
+  timeOfDay       String   // HH:MM
+  durationMins    Int      @default(30)
+  timezone        String   @default("Europe/London")
+  calendarSyncType String? // google | apple
+  calendarEventId String?
+  isActive        Boolean  @default(true)
+  nextSessionAt   DateTime
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([nextSessionAt])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// NOTIFICATIONS
+// ════════════════════════════════════════════════════════════════════════════
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  type        NotifType
+  title       String
+  body        String   @db.Text
+  data        Json?    // { hireId, sessionId, url }
+  priority    String   @default("normal") // normal | high (micro-moment)
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([readAt])
+  @@index([createdAt])
+}
+
+enum NotifType {
+  SESSION_REMINDER    // Scheduled session starting
+  EXAM_COUNTDOWN      // X days to exam
+  STREAK_AT_RISK      // No session for N days
+  MILESTONE_REACHED   // Session count milestone
+  PROGRESS_UPDATE     // Weekly progress summary
+  GUARDIAN_ALERT      // Child session alert
+  WELLBEING_SIGNAL    // Wellbeing concern detected
+  BRAIN_SYNC_FAILED   // Cloud drive sync issue
+  AUDIT_COMPLETE      // Creator: audit result ready
+  PAYOUT_READY        // Creator: payout available
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PAYMENTS AND SUBSCRIPTIONS
+// ════════════════════════════════════════════════════════════════════════════
+
+model Subscription {
+  id              String             @id @default(cuid())
+  userId          String             @unique
+  user            User               @relation(fields: [userId], references: [id])
+  stripeSubId     String             @unique
+  stripeCustomerId String            @unique
+  plan            UserPlan
+  status          SubscriptionStatus
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean         @default(false)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  TRIALING
+  PAUSED
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  stripePaymentId String?  @unique
+  coinbaseChargeId String? @unique  // For $TAGNT credit purchases
+  amount          Int      // pence
+  currency        String   @default("gbp")
+  status          String   // succeeded | pending | failed
+  type            String   // subscription | credit_topup | gift | hardware
+  description     String?
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+}
+
+model GiftSubscription {
+  id              String   @id @default(cuid())
+  senderId        String
+  sender          User     @relation("sender", fields: [senderId], references: [id])
+  recipientId     String?
+  recipient       User?    @relation("recipient", fields: [recipientId], references: [id])
+  recipientEmail  String
+  plan            UserPlan
+  durationMonths  Int
+  roleId          String?  // Optional: gift a specific role
+  personalMessage String?  @db.Text
+  activationCode  String   @unique @default(cuid())
+  activatedAt     DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+
+  @@index([senderId])
+  @@index([activationCode])
+}
+
+model ReferralReward {
+  id            String   @id @default(cuid())
+  referrerId    String
+  referredId    String
+  rewardMonths  Int      @default(1)
+  appliedAt     DateTime?
+  createdAt     DateTime @default(now())
+
+  @@unique([referrerId, referredId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// NHS / SOCIAL PRESCRIBING
+// ════════════════════════════════════════════════════════════════════════════
+
+model NHSReferralCode {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  gpPracticeId    String
+  gpPracticeName  String
+  roleSlug        String   // Specific role to activate
+  durationDays    Int      @default(30)
+  maxActivations  Int      @default(1)
+  activationCount Int      @default(0)
+  createdBy       String   // Admin user ID
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+
+  activations     NHSReferralActivation[]
+
+  @@index([code])
+}
+
+model NHSReferralActivation {
+  id          String          @id @default(cuid())
+  codeId      String
+  code        NHSReferralCode @relation(fields: [codeId], references: [id])
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+  activatedAt DateTime        @default(now())
+
+  @@unique([codeId, userId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SCHOOL / INSTITUTIONAL LICENSING
+// ════════════════════════════════════════════════════════════════════════════
+
+model SchoolLicence {
+  id              String   @id @default(cuid())
+  schoolName      String
+  contactEmail    String
+  contactName     String
+  roleSlugAccess  String[] // Which roles students can access
+  maxStudents     Int
+  pricePerStudent Int      // pence per month
+  stripeSubId     String?
+  status          String   @default("active") // active | suspended | expired
+  activationCode  String   @unique @default(cuid())
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+
+  enrolments      StudentEnrolment[]
+}
+
+model StudentEnrolment {
+  id          String        @id @default(cuid())
+  licenceId   String
+  licence     SchoolLicence @relation(fields: [licenceId], references: [id])
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  enrolledAt  DateTime      @default(now())
+
+  @@unique([licenceId, userId])
+  @@index([licenceId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// CREATOR MARKETPLACE
+// ════════════════════════════════════════════════════════════════════════════
+
+model CreatorProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+  displayName     String
+  bio             String   @db.Text
+  credentials     String   @db.Text  // Professional credentials
+  verified        Boolean  @default(false)
+  verifiedAt      DateTime?
+  revenueSharePct Int      @default(80)  // Creator gets 80%
+  totalEarnings   Int      @default(0)   // pence
+  tagntBalance    Int      @default(0)   // $TAGNT earnings
+  createdAt       DateTime @default(now())
+
+  roles           Role[]
+  applications    CreatorApplication[]
+  payouts         CreatorPayout[]
+
+  @@index([verified])
+}
+
+model CreatorApplication {
+  id              String          @id @default(cuid())
+  creatorId       String
+  creator         CreatorProfile  @relation(fields: [creatorId], references: [id])
+  roleSlug        String
+  submittedConfig Json            // Role config JSON (system prompt encrypted)
+  status          String          @default("pending") // pending | in_review | approved | rejected
+  reviewNotes     String?         @db.Text
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  submittedAt     DateTime        @default(now())
+
+  @@index([creatorId])
+  @@index([status])
+}
+
+model CreatorPayout {
+  id              String          @id @default(cuid())
+  creatorId       String
+  creator         CreatorProfile  @relation(fields: [creatorId], references: [id])
+  amount          Int             // $TAGNT amount
+  periodStart     DateTime
+  periodEnd       DateTime
+  status          String          @default("pending") // pending | processing | complete
+  txHash          String?         // Base chain transaction hash
+  paidAt          DateTime?
+  createdAt       DateTime        @default(now())
+
+  @@index([creatorId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// HARDWARE DEVICES
+// ════════════════════════════════════════════════════════════════════════════
+
+model HardwareDevice {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  deviceType      DeviceType
+  serialNumber    String   @unique
+  apiKey          String   @unique  // ta_device_{cuid}
+  nickname        String?
+  firmwareVersion String?
+  lastSeenAt      DateTime?
+  activatedAt     DateTime @default(now())
+
+  activations     HardwareActivation[]
+
+  @@index([userId])
+  @@index([apiKey])
+}
+
+enum DeviceType {
+  TRUSTBOX_PRO
+  TRUSTSTICK
+  TRUSTEDGE_ENTERPRISE
+}
+
+model HardwareActivation {
+  id          String         @id @default(cuid())
+  deviceId    String
+  device      HardwareDevice @relation(fields: [deviceId], references: [id])
+  roleSlug    String
+  activatedAt DateTime       @default(now())
+  expiresAt   DateTime?
+
+  @@index([deviceId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TOKEN ECONOMY
+// ════════════════════════════════════════════════════════════════════════════
+
+model TokenStake {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  roleSlug    String
+  roleType    RoleType
+  amount      Int      // $TAGNT amount staked
+  status      String   @default("active") // active | slashed | withdrawn
+  stakedAt    DateTime @default(now())
+  slashedAt   DateTime?
+  slashReason String?
+  withdrawnAt DateTime?
+  txHash      String?  // Base chain transaction hash
+
+  @@unique([userId, roleSlug])
+  @@index([userId])
+  @@index([status])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// AUDIT PIPELINE
+// ════════════════════════════════════════════════════════════════════════════
+
+model AuditJob {
+  id          String   @id @default(cuid())
+  roleId      String
+  submittedBy String   // User ID (creator) or 'system'
+  status      String   @default("queued") // queued | stage1 | stage2 | stage3 | complete | failed
+  priority    String   @default("normal") // normal | express (paid)
+  stage1Done  Boolean  @default(false)
+  stage2Done  Boolean  @default(false)
+  stage3Done  Boolean  @default(false)
+  stage1At    DateTime?
+  stage2At    DateTime?
+  stage3At    DateTime?
+  completedAt DateTime?
+  errorMsg    String?
+  createdAt   DateTime @default(now())
+
+  @@index([roleId])
+  @@index([status])
+}

@@ -1,0 +1,16 @@
+{
+  "slug": "mediterranean",
+  "name": "Mediterranean Terrace",
+  "description": "A whitewashed terrace overlooking a turquoise sea, terracotta pots of bougainvillea, a gentle sea breeze carrying the scent of citrus, and warm afternoon sunlight.",
+  "backgroundGradient": "linear-gradient(160deg, #0097A7 0%, #00ACC1 25%, #E0F7FA 50%, #FFF3E0 70%, #FF8F00 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/mediterranean/ambient.mp3",
+  "particleConfig": {
+    "type": "petals",
+    "count": 10,
+    "color": "#F48FB1",
+    "opacity": 0.35,
+    "speed": 0.25,
+    "size": { "min": 3, "max": 8 }
+  },
+  "accentColor": "#00BCD4"
+}

@@ -1,0 +1,16 @@
+{
+  "slug": "kitchen-home",
+  "name": "Home Kitchen",
+  "description": "A warm family kitchen with a butcher-block island, copper pans hanging overhead, the aroma of fresh baking, and afternoon sunlight through a herb-lined window.",
+  "backgroundGradient": "linear-gradient(150deg, #FFF3E0 0%, #FFE0B2 20%, #FFCC80 40%, #FF8F00 60%, #E65100 80%, #BF360C 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/kitchen-home/ambient.mp3",
+  "particleConfig": {
+    "type": "steam",
+    "count": 12,
+    "color": "#FFF3E0",
+    "opacity": 0.2,
+    "speed": 0.3,
+    "size": { "min": 3, "max": 10 }
+  },
+  "accentColor": "#FF6D00"
+}

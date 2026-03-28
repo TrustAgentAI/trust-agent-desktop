@@ -1,0 +1,16 @@
+{
+  "slug": "nordic-sauna",
+  "name": "Nordic Sauna",
+  "description": "A traditional Finnish sauna built from pale birch wood, soft heat radiating from hot stones, the hiss of water on the kiuas, and the scent of pine tar and eucalyptus.",
+  "backgroundGradient": "linear-gradient(150deg, #5D4037 0%, #795548 25%, #A1887F 50%, #D7CCC8 75%, #8D6E63 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/nordic-sauna/ambient.mp3",
+  "particleConfig": {
+    "type": "steam",
+    "count": 20,
+    "color": "#EFEBE9",
+    "opacity": 0.25,
+    "speed": 0.35,
+    "size": { "min": 4, "max": 12 }
+  },
+  "accentColor": "#BCAAA4"
+}

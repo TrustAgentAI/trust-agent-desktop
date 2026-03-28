@@ -1,0 +1,16 @@
+{
+  "slug": "fireplace-stone",
+  "name": "Stone Fireplace",
+  "description": "A grand stone hearth with a roaring fire, the crackle and pop of seasoned logs, dancing shadows on rough-hewn walls, and the warmth of flickering amber light.",
+  "backgroundGradient": "linear-gradient(160deg, #BF360C 0%, #D84315 20%, #4E342E 50%, #3E2723 80%, #1B0000 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/fireplace-stone/ambient.mp3",
+  "particleConfig": {
+    "type": "embers",
+    "count": 20,
+    "color": "#FFAB40",
+    "opacity": 0.7,
+    "speed": 0.35,
+    "size": { "min": 1, "max": 4 }
+  },
+  "accentColor": "#FF6E40"
+}

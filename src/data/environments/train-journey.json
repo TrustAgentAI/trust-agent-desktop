@@ -1,0 +1,16 @@
+{
+  "slug": "train-journey",
+  "name": "Train Through Countryside",
+  "description": "The gentle rhythm of a train on tracks, rolling green countryside passing the window, a small table with a cup of tea, and the soothing rattle of the carriage.",
+  "backgroundGradient": "linear-gradient(170deg, #558B2F 0%, #689F38 25%, #8BC34A 45%, #AED581 60%, #33691E 85%, #1B5E20 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/train-journey/ambient.mp3",
+  "particleConfig": {
+    "type": "landscape-blur",
+    "count": 5,
+    "color": "#AED581",
+    "opacity": 0.15,
+    "speed": 0.8,
+    "size": { "min": 10, "max": 30 }
+  },
+  "accentColor": "#7CB342"
+}

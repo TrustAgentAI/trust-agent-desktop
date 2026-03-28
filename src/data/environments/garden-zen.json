@@ -1,0 +1,16 @@
+{
+  "slug": "garden-zen",
+  "name": "Zen Garden",
+  "description": "A meticulously raked sand garden with moss-covered stones, a bamboo water feature, and the gentle sound of water trickling over river pebbles.",
+  "backgroundGradient": "linear-gradient(140deg, #37474F 0%, #455A64 30%, #78909C 60%, #B0BEC5 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/garden-zen/ambient.mp3",
+  "particleConfig": {
+    "type": "leaves",
+    "count": 8,
+    "color": "#A5D6A7",
+    "opacity": 0.35,
+    "speed": 0.15,
+    "size": { "min": 5, "max": 12 }
+  },
+  "accentColor": "#80CBC4"
+}

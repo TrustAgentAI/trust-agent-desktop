@@ -1,0 +1,16 @@
+{
+  "slug": "mountain-summit",
+  "name": "Mountain Summit",
+  "description": "A windswept mountain peak above the clouds at dawn, panoramic views of snow-capped ridges, crisp thin air, and the golden glow of sunrise painting the landscape.",
+  "backgroundGradient": "linear-gradient(170deg, #E8EAF6 0%, #9FA8DA 20%, #5C6BC0 45%, #303F9F 70%, #1A237E 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/mountain-summit/ambient.mp3",
+  "particleConfig": {
+    "type": "snow",
+    "count": 20,
+    "color": "#E8EAF6",
+    "opacity": 0.4,
+    "speed": 0.5,
+    "size": { "min": 1, "max": 3 }
+  },
+  "accentColor": "#7986CB"
+}

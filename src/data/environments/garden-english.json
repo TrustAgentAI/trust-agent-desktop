@@ -1,0 +1,16 @@
+{
+  "slug": "garden-english",
+  "name": "English Garden",
+  "description": "A sprawling English country garden with rose-covered arches, a stone bench beneath a willow tree, birdsong, and the soft buzz of bees among lavender borders.",
+  "backgroundGradient": "linear-gradient(150deg, #1B5E20 0%, #2E7D32 25%, #66BB6A 55%, #A5D6A7 85%, #81C784 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/garden-english/ambient.mp3",
+  "particleConfig": {
+    "type": "petals",
+    "count": 20,
+    "color": "#F8BBD0",
+    "opacity": 0.5,
+    "speed": 0.3,
+    "size": { "min": 4, "max": 10 }
+  },
+  "accentColor": "#4CAF50"
+}

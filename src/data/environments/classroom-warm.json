@@ -1,0 +1,16 @@
+{
+  "slug": "classroom-warm",
+  "name": "Warm Classroom",
+  "description": "A bright, welcoming primary school classroom with colourful displays on the walls, child-height furniture, a reading corner with beanbags, and warm natural light.",
+  "backgroundGradient": "linear-gradient(150deg, #FFF8E1 0%, #FFECB3 20%, #FFD54F 40%, #FFB300 60%, #FFF3E0 80%, #FFE0B2 100%)",
+  "ambientAudioUrl": "s3://trust-agent-assets/environments/classroom-warm/ambient.mp3",
+  "particleConfig": {
+    "type": "sparkle",
+    "count": 15,
+    "color": "#FFD54F",
+    "opacity": 0.35,
+    "speed": 0.15,
+    "size": { "min": 2, "max": 5 }
+  },
+  "accentColor": "#FFB300"
+}
