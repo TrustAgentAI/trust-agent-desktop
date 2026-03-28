@@ -1,0 +1,98 @@
+{
+  "_meta": {
+    "direction": "rtl",
+    "locale": "ar"
+  },
+  "nav": {
+    "chat": "محادثة",
+    "tasks": "المهام",
+    "marketplace": "السوق",
+    "permissions": "الأذونات",
+    "settings": "الإعدادات"
+  },
+  "sidebar": {
+    "hired_roles": "الأدوار المُوظَّفة",
+    "add_role": "إضافة دور",
+    "no_roles": "لا توجد أدوار مُوظَّفة",
+    "tier_free": "مجاني",
+    "tier_pro": "احترافي",
+    "tier_ent": "مؤسسي"
+  },
+  "chat": {
+    "send": "إرسال",
+    "placeholder": "اكتب رسالة...",
+    "thinking": "جاري التفكير...",
+    "clear_history": "مسح السجل",
+    "export_chat": "تصدير المحادثة"
+  },
+  "tasks": {
+    "title": "المهام",
+    "add_task": "إضافة مهمة",
+    "in_progress": "قيد التنفيذ",
+    "completed": "مكتمل",
+    "pending": "معلّق",
+    "no_tasks": "لا توجد مهام"
+  },
+  "marketplace": {
+    "browse": "تصفح الوكلاء",
+    "search_placeholder": "البحث عن وكلاء...",
+    "hire": "توظيف",
+    "install": "تثبيت",
+    "trust_score": "درجة الثقة",
+    "price": "السعر",
+    "free": "مجاني",
+    "categories": "الفئات",
+    "filter": "تصفية",
+    "sort": "ترتيب"
+  },
+  "permissions": {
+    "title": "الأذونات",
+    "granted": "ممنوح",
+    "denied": "مرفوض",
+    "pending_review": "بانتظار المراجعة",
+    "file_access": "الوصول إلى الملفات",
+    "network_access": "الوصول إلى الشبكة",
+    "system_access": "الوصول إلى النظام"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "general": "عام",
+    "appearance": "المظهر",
+    "language": "اللغة",
+    "notifications": "الإشعارات",
+    "api_keys": "مفاتيح API",
+    "about": "حول",
+    "theme": "السمة",
+    "dark_mode": "الوضع الداكن",
+    "light_mode": "الوضع الفاتح"
+  },
+  "connection": {
+    "connected": "متصل",
+    "disconnected": "غير متصل",
+    "reconnecting": "إعادة الاتصال...",
+    "gateway_url": "عنوان البوابة"
+  },
+  "common": {
+    "loading": "جاري التحميل...",
+    "error": "حدث خطأ ما",
+    "retry": "إعادة المحاولة",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "back": "رجوع",
+    "next": "التالي",
+    "search": "بحث",
+    "no_results": "لا توجد نتائج",
+    "close": "إغلاق",
+    "open": "فتح",
+    "delete": "حذف",
+    "edit": "تحرير"
+  },
+  "auth": {
+    "signin": "تسجيل الدخول",
+    "signup": "إنشاء حساب",
+    "logout": "تسجيل الخروج",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور"
+  }
+}

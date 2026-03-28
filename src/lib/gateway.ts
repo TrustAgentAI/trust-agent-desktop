@@ -171,12 +171,16 @@ export const gateway = {
   },
 
   sessions: {
-    async create(roleHireId: string): Promise<CreateSessionResponse> {
-      return request<CreateSessionResponse>('POST', '/api/v1/sessions', { roleHireId });
+    async create(roleHireId: string, language?: string): Promise<CreateSessionResponse> {
+      return request<CreateSessionResponse>('POST', '/api/v1/sessions', {
+        roleHireId,
+        ...(language && language !== 'en' ? { language } : {}),
+      });
     },
-    async sendMessage(sessionId: string, message: string): Promise<SendMessageResponse> {
+    async sendMessage(sessionId: string, message: string, language?: string): Promise<SendMessageResponse> {
       return request<SendMessageResponse>('POST', `/api/v1/sessions/${sessionId}/messages`, {
         content: message,
+        ...(language && language !== 'en' ? { language } : {}),
       });
     },
     async getHistory(sessionId: string): Promise<Message[]> {

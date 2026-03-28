@@ -1,0 +1,94 @@
+{
+  "nav": {
+    "chat": "Discussion",
+    "tasks": "Taches",
+    "marketplace": "Marche",
+    "permissions": "Autorisations",
+    "settings": "Parametres"
+  },
+  "sidebar": {
+    "hired_roles": "Roles engages",
+    "add_role": "Ajouter un role",
+    "no_roles": "Aucun role engage",
+    "tier_free": "GRATUIT",
+    "tier_pro": "PRO",
+    "tier_ent": "ENT"
+  },
+  "chat": {
+    "send": "Envoyer",
+    "placeholder": "Ecrivez un message...",
+    "thinking": "Reflexion...",
+    "clear_history": "Effacer l'historique",
+    "export_chat": "Exporter le chat"
+  },
+  "tasks": {
+    "title": "Taches",
+    "add_task": "Ajouter une tache",
+    "in_progress": "En cours",
+    "completed": "Termine",
+    "pending": "En attente",
+    "no_tasks": "Aucune tache"
+  },
+  "marketplace": {
+    "browse": "Parcourir les agents",
+    "search_placeholder": "Rechercher des agents...",
+    "hire": "Engager",
+    "install": "Installer",
+    "trust_score": "Score de confiance",
+    "price": "Prix",
+    "free": "Gratuit",
+    "categories": "Categories",
+    "filter": "Filtrer",
+    "sort": "Trier"
+  },
+  "permissions": {
+    "title": "Autorisations",
+    "granted": "Accorde",
+    "denied": "Refuse",
+    "pending_review": "En attente de verification",
+    "file_access": "Acces aux fichiers",
+    "network_access": "Acces reseau",
+    "system_access": "Acces systeme"
+  },
+  "settings": {
+    "title": "Parametres",
+    "general": "General",
+    "appearance": "Apparence",
+    "language": "Langue",
+    "notifications": "Notifications",
+    "api_keys": "Cles API",
+    "about": "A propos",
+    "theme": "Theme",
+    "dark_mode": "Mode sombre",
+    "light_mode": "Mode clair"
+  },
+  "connection": {
+    "connected": "Connecte",
+    "disconnected": "Deconnecte",
+    "reconnecting": "Reconnexion...",
+    "gateway_url": "URL du gateway"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Une erreur est survenue",
+    "retry": "Reessayer",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "back": "Retour",
+    "next": "Suivant",
+    "search": "Rechercher",
+    "no_results": "Aucun resultat",
+    "close": "Fermer",
+    "open": "Ouvrir",
+    "delete": "Supprimer",
+    "edit": "Modifier"
+  },
+  "auth": {
+    "signin": "Se connecter",
+    "signup": "S'inscrire",
+    "logout": "Se deconnecter",
+    "email": "E-mail",
+    "password": "Mot de passe"
+  }
+}

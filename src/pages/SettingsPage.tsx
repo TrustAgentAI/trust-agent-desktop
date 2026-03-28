@@ -1,10 +1,50 @@
 import React from 'react';
-import { Settings, Wifi, WifiOff, ExternalLink } from 'lucide-react';
+import { Settings, Wifi, WifiOff, ExternalLink, Globe } from 'lucide-react';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useAuthStore } from '@/store/authStore';
 import { isTauri } from '@/lib/tauri-compat';
 import { showToast } from '@/components/ui/Toast';
 import type { LLMProvider } from '@/store/settingsStore';
+
+// ---------------------------------------------------------------------------
+// 33 supported response languages
+// ---------------------------------------------------------------------------
+
+const SUPPORTED_LANGUAGES: { code: string; name: string }[] = [
+  { code: 'en', name: 'English' },
+  { code: 'es', name: 'Spanish' },
+  { code: 'fr', name: 'French' },
+  { code: 'de', name: 'German' },
+  { code: 'it', name: 'Italian' },
+  { code: 'pt', name: 'Portuguese' },
+  { code: 'nl', name: 'Dutch' },
+  { code: 'ru', name: 'Russian' },
+  { code: 'zh', name: 'Chinese' },
+  { code: 'ja', name: 'Japanese' },
+  { code: 'ko', name: 'Korean' },
+  { code: 'ar', name: 'Arabic' },
+  { code: 'hi', name: 'Hindi' },
+  { code: 'bn', name: 'Bengali' },
+  { code: 'tr', name: 'Turkish' },
+  { code: 'pl', name: 'Polish' },
+  { code: 'uk', name: 'Ukrainian' },
+  { code: 'sv', name: 'Swedish' },
+  { code: 'da', name: 'Danish' },
+  { code: 'no', name: 'Norwegian' },
+  { code: 'fi', name: 'Finnish' },
+  { code: 'el', name: 'Greek' },
+  { code: 'cs', name: 'Czech' },
+  { code: 'ro', name: 'Romanian' },
+  { code: 'hu', name: 'Hungarian' },
+  { code: 'th', name: 'Thai' },
+  { code: 'vi', name: 'Vietnamese' },
+  { code: 'id', name: 'Indonesian' },
+  { code: 'ms', name: 'Malay' },
+  { code: 'tl', name: 'Filipino' },
+  { code: 'sw', name: 'Swahili' },
+  { code: 'he', name: 'Hebrew' },
+  { code: 'fa', name: 'Persian' },
+];
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.trust-agent.ai';
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || '1.0.0';
@@ -213,6 +253,40 @@ export function SettingsPage() {
         <button onClick={handleSaveLLM} style={{ ...primaryBtnStyle, marginTop: 8 }}>
           Save
         </button>
+      </Section>
+
+      {/* Response Language */}
+      <Section title="Response Language">
+        <FieldRow label="Language">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Globe size={14} style={{ color: 'var(--color-ion-cyan)', flexShrink: 0 }} />
+            <select
+              value={settings.language}
+              onChange={(e) => {
+                settings.setLanguage(e.target.value);
+                showToast('Response language updated', 'success');
+              }}
+              style={selectStyle}
+            >
+              {SUPPORTED_LANGUAGES.map((lang) => (
+                <option key={lang.code} value={lang.code}>
+                  {lang.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </FieldRow>
+        <p
+          style={{
+            fontSize: '11px',
+            color: 'var(--color-text-muted)',
+            marginTop: 4,
+            lineHeight: 1.5,
+          }}
+        >
+          Roles will respond in your chosen language. Language tutor roles will use
+          your language for explanations while teaching in the target language.
+        </p>
       </Section>
 
       {/* Voice Settings */}

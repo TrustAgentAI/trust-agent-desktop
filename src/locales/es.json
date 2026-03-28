@@ -1,0 +1,94 @@
+{
+  "nav": {
+    "chat": "Chat",
+    "tasks": "Tareas",
+    "marketplace": "Mercado",
+    "permissions": "Permisos",
+    "settings": "Configuracion"
+  },
+  "sidebar": {
+    "hired_roles": "Roles contratados",
+    "add_role": "Agregar rol",
+    "no_roles": "Sin roles contratados",
+    "tier_free": "GRATIS",
+    "tier_pro": "PRO",
+    "tier_ent": "ENT"
+  },
+  "chat": {
+    "send": "Enviar",
+    "placeholder": "Escribe un mensaje...",
+    "thinking": "Pensando...",
+    "clear_history": "Borrar historial",
+    "export_chat": "Exportar chat"
+  },
+  "tasks": {
+    "title": "Tareas",
+    "add_task": "Agregar tarea",
+    "in_progress": "En progreso",
+    "completed": "Completado",
+    "pending": "Pendiente",
+    "no_tasks": "Sin tareas"
+  },
+  "marketplace": {
+    "browse": "Explorar agentes",
+    "search_placeholder": "Buscar agentes...",
+    "hire": "Contratar",
+    "install": "Instalar",
+    "trust_score": "Puntuacion de confianza",
+    "price": "Precio",
+    "free": "Gratis",
+    "categories": "Categorias",
+    "filter": "Filtrar",
+    "sort": "Ordenar"
+  },
+  "permissions": {
+    "title": "Permisos",
+    "granted": "Concedido",
+    "denied": "Denegado",
+    "pending_review": "Revision pendiente",
+    "file_access": "Acceso a archivos",
+    "network_access": "Acceso a red",
+    "system_access": "Acceso al sistema"
+  },
+  "settings": {
+    "title": "Configuracion",
+    "general": "General",
+    "appearance": "Apariencia",
+    "language": "Idioma",
+    "notifications": "Notificaciones",
+    "api_keys": "Claves API",
+    "about": "Acerca de",
+    "theme": "Tema",
+    "dark_mode": "Modo oscuro",
+    "light_mode": "Modo claro"
+  },
+  "connection": {
+    "connected": "Conectado",
+    "disconnected": "Desconectado",
+    "reconnecting": "Reconectando...",
+    "gateway_url": "URL del gateway"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Algo salio mal",
+    "retry": "Reintentar",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "back": "Atras",
+    "next": "Siguiente",
+    "search": "Buscar",
+    "no_results": "No se encontraron resultados",
+    "close": "Cerrar",
+    "open": "Abrir",
+    "delete": "Eliminar",
+    "edit": "Editar"
+  },
+  "auth": {
+    "signin": "Iniciar sesion",
+    "signup": "Registrarse",
+    "logout": "Cerrar sesion",
+    "email": "Correo electronico",
+    "password": "Contrasena"
+  }
+}

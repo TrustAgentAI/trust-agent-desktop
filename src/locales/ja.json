@@ -1,0 +1,94 @@
+{
+  "nav": {
+    "chat": "チャット",
+    "tasks": "タスク",
+    "marketplace": "マーケットプレイス",
+    "permissions": "権限",
+    "settings": "設定"
+  },
+  "sidebar": {
+    "hired_roles": "採用済みロール",
+    "add_role": "ロールを追加",
+    "no_roles": "採用済みロールなし",
+    "tier_free": "無料",
+    "tier_pro": "プロ",
+    "tier_ent": "企業"
+  },
+  "chat": {
+    "send": "送信",
+    "placeholder": "メッセージを入力...",
+    "thinking": "考え中...",
+    "clear_history": "履歴を消去",
+    "export_chat": "チャットをエクスポート"
+  },
+  "tasks": {
+    "title": "タスク",
+    "add_task": "タスクを追加",
+    "in_progress": "進行中",
+    "completed": "完了",
+    "pending": "保留中",
+    "no_tasks": "タスクなし"
+  },
+  "marketplace": {
+    "browse": "エージェントを閲覧",
+    "search_placeholder": "エージェントを検索...",
+    "hire": "採用",
+    "install": "インストール",
+    "trust_score": "信頼スコア",
+    "price": "価格",
+    "free": "無料",
+    "categories": "カテゴリ",
+    "filter": "フィルター",
+    "sort": "並び替え"
+  },
+  "permissions": {
+    "title": "権限",
+    "granted": "許可済み",
+    "denied": "拒否",
+    "pending_review": "レビュー待ち",
+    "file_access": "ファイルアクセス",
+    "network_access": "ネットワークアクセス",
+    "system_access": "システムアクセス"
+  },
+  "settings": {
+    "title": "設定",
+    "general": "一般",
+    "appearance": "外観",
+    "language": "言語",
+    "notifications": "通知",
+    "api_keys": "APIキー",
+    "about": "概要",
+    "theme": "テーマ",
+    "dark_mode": "ダークモード",
+    "light_mode": "ライトモード"
+  },
+  "connection": {
+    "connected": "接続済み",
+    "disconnected": "切断",
+    "reconnecting": "再接続中...",
+    "gateway_url": "ゲートウェイURL"
+  },
+  "common": {
+    "loading": "読み込み中...",
+    "error": "エラーが発生しました",
+    "retry": "再試行",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "confirm": "確認",
+    "back": "戻る",
+    "next": "次へ",
+    "search": "検索",
+    "no_results": "結果が見つかりません",
+    "close": "閉じる",
+    "open": "開く",
+    "delete": "削除",
+    "edit": "編集"
+  },
+  "auth": {
+    "signin": "ログイン",
+    "signup": "新規登録",
+    "logout": "ログアウト",
+    "email": "メールアドレス",
+    "password": "パスワード"
+  }
+}

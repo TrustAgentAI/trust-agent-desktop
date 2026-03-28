@@ -45,7 +45,73 @@ const InvokeBodySchema = z.object({
   llmProvider: z.enum(['openai', 'anthropic']).optional(),
   llmModel: z.string().max(100).optional(),
   llmApiKey: z.string().max(500).optional(),
+  language: z.string().min(2).max(5).optional(),
 });
+
+// ---------------------------------------------------------------------------
+// Language code to name mapping (33 supported languages)
+// ---------------------------------------------------------------------------
+
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: 'English', es: 'Spanish', fr: 'French', de: 'German', it: 'Italian',
+  pt: 'Portuguese', nl: 'Dutch', ru: 'Russian', zh: 'Chinese', ja: 'Japanese',
+  ko: 'Korean', ar: 'Arabic', hi: 'Hindi', bn: 'Bengali', tr: 'Turkish',
+  pl: 'Polish', uk: 'Ukrainian', sv: 'Swedish', da: 'Danish', no: 'Norwegian',
+  fi: 'Finnish', el: 'Greek', cs: 'Czech', ro: 'Romanian', hu: 'Hungarian',
+  th: 'Thai', vi: 'Vietnamese', id: 'Indonesian', ms: 'Malay', tl: 'Filipino',
+  sw: 'Swahili', he: 'Hebrew', fa: 'Persian',
+};
+
+const LANGUAGE_TUTOR_KEYWORDS = [
+  'language tutor', 'language teacher', 'language coach',
+  'language instructor', 'language learning',
+  'spanish tutor', 'french tutor', 'german tutor', 'italian tutor',
+  'japanese tutor', 'chinese tutor', 'korean tutor', 'arabic tutor',
+  'portuguese tutor', 'russian tutor', 'hindi tutor', 'english tutor',
+];
+
+/**
+ * Build a language instruction to prepend to the system prompt at runtime.
+ * Never persisted - injected per-request only.
+ */
+function buildLanguageInstruction(
+  langCode: string,
+  systemPrompt: string,
+  roleName: string,
+): string {
+  if (!langCode || langCode === 'en') return '';
+
+  const langName = LANGUAGE_NAMES[langCode] || 'English';
+  const combined = (roleName + ' ' + systemPrompt).toLowerCase();
+
+  const isTutor = LANGUAGE_TUTOR_KEYWORDS.some((kw) => combined.includes(kw));
+
+  if (isTutor) {
+    // Detect target language from role name / prompt
+    let targetLang = 'the target language';
+    for (const [, name] of Object.entries(LANGUAGE_NAMES)) {
+      if (combined.includes(name.toLowerCase())) {
+        targetLang = name;
+        break;
+      }
+    }
+
+    return (
+      `\n\nYou are teaching ${targetLang}. Use ${langName} for explanations, ` +
+      `instructions, and feedback. Use ${targetLang} for examples, exercises, ` +
+      `and immersion content. Adjust the ratio based on the learner's level ` +
+      `(more ${langName} at beginner, more ${targetLang} at advanced).`
+    );
+  }
+
+  return (
+    `\n\nIMPORTANT: The user's preferred language is ${langName}. ` +
+    `Always respond in ${langName} unless the conversation specifically involves ` +
+    `teaching another language. If teaching a language, use ${langName} for ` +
+    `explanations and instructions while using the target language for examples ` +
+    `and exercises.`
+  );
+}
 
 // ---------------------------------------------------------------------------
 // POST /v1/gateway/invoke
@@ -81,7 +147,7 @@ gatewayRouter.post('/invoke', async (req: Request, res: Response) => {
       return;
     }
 
-    const { roleSlug, messages, taskDescription, stream, llmProvider, llmModel, llmApiKey } =
+    const { roleSlug, messages, taskDescription, stream, llmProvider, llmModel, llmApiKey, language } =
       parseResult.data;
 
     // ── 3. Check hire exists and is active ────────────────────────────────
@@ -221,10 +287,17 @@ gatewayRouter.post('/invoke', async (req: Request, res: Response) => {
     }
 
     // ── 10. Assemble system prompt (in memory - never logged/stored) ──────
+    const languageInjection = buildLanguageInstruction(
+      language ?? 'en',
+      role.systemPrompt,
+      role.name ?? role.slug ?? '',
+    );
+
     const assembledSystemPrompt = [
       role.systemPrompt,
       brainInjection,
       skillInjection,
+      languageInjection,
     ].join('').trim();
 
     // ── 11. Route to appropriate LLM provider ─────────────────────────────

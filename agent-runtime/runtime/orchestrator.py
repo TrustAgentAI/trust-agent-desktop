@@ -15,10 +15,38 @@ from typing import Any, AsyncIterator, Optional
 import anthropic
 import openai
 
-from config import LLMProvider, RuntimeConfig
+from config import LLMProvider, RuntimeConfig, get_language_name
 from runtime.audit import AuditLogger
 from runtime.memory import SessionMemory
 from runtime.tools import ToolRegistry
+
+# ---------------------------------------------------------------------------
+# Language instruction templates injected at runtime (never stored in role JSON)
+# ---------------------------------------------------------------------------
+
+_LANGUAGE_INSTRUCTION = (
+    "\n\nIMPORTANT: The user's preferred language is {language}. "
+    "Always respond in {language} unless the conversation specifically involves "
+    "teaching another language. If teaching a language, use {language} for "
+    "explanations and instructions while using the target language for examples "
+    "and exercises."
+)
+
+_LANGUAGE_TUTOR_INSTRUCTION = (
+    "\n\nYou are teaching {target_language}. Use {user_language} for explanations, "
+    "instructions, and feedback. Use {target_language} for examples, exercises, "
+    "and immersion content. Adjust the ratio based on the learner's level "
+    "(more {user_language} at beginner, more {target_language} at advanced)."
+)
+
+# Role names / keywords that indicate a language tutor role
+_LANGUAGE_TUTOR_KEYWORDS = [
+    "language tutor", "language teacher", "language coach",
+    "spanish tutor", "french tutor", "german tutor", "italian tutor",
+    "japanese tutor", "chinese tutor", "korean tutor", "arabic tutor",
+    "portuguese tutor", "russian tutor", "hindi tutor", "english tutor",
+    "language instructor", "language learning",
+]
 
 
 def _emit(event: dict[str, Any]) -> None:
@@ -94,6 +122,53 @@ class Orchestrator:
         return response_text
 
     # ------------------------------------------------------------------
+    # Language-aware system prompt
+    # ------------------------------------------------------------------
+
+    def _build_system_prompt(self) -> str:
+        """Return the role system prompt with language instruction appended at runtime.
+
+        The language instruction is injected per-session and never persisted in the
+        role JSON.  Language tutor roles get special bilingual handling so the tutor
+        explains in the user's language while demonstrating in the target language.
+        """
+        base_prompt = self._config.role.system_prompt
+        lang_code = self._config.user_language
+        lang_name = self._config.user_language_name or get_language_name(lang_code)
+
+        # Skip injection when the user language is English and the role prompt is
+        # already in English (the default case) to avoid unnecessary tokens.
+        if lang_code == "en":
+            return base_prompt
+
+        # Detect language tutor roles by checking role name and system prompt
+        role_name_lower = self._config.role.role_name.lower()
+        prompt_lower = base_prompt.lower()
+        is_tutor = any(kw in role_name_lower or kw in prompt_lower for kw in _LANGUAGE_TUTOR_KEYWORDS)
+
+        if is_tutor:
+            # Try to extract the target language from the role name / prompt
+            target_language = self._detect_target_language(role_name_lower, prompt_lower)
+            return base_prompt + _LANGUAGE_TUTOR_INSTRUCTION.format(
+                target_language=target_language,
+                user_language=lang_name,
+            )
+
+        return base_prompt + _LANGUAGE_INSTRUCTION.format(language=lang_name)
+
+    @staticmethod
+    def _detect_target_language(role_name: str, prompt: str) -> str:
+        """Best-effort extraction of the language a tutor role teaches."""
+        from config import LANGUAGE_MAP
+
+        combined = role_name + " " + prompt
+        for _code, name in LANGUAGE_MAP.items():
+            if name.lower() in combined:
+                return name
+        # Fallback - could not determine the target language
+        return "the target language"
+
+    # ------------------------------------------------------------------
     # Message construction
     # ------------------------------------------------------------------
 
@@ -110,7 +185,7 @@ class Orchestrator:
     async def _run_openai(self, messages: list[dict[str, str]]) -> str:
         """Execute a chat-completion turn with tool-call loop using OpenAI API."""
         client = self._get_openai()
-        system_prompt = self._config.role.system_prompt
+        system_prompt = self._build_system_prompt()
         tool_defs = self._tools.get_tool_definitions()
 
         api_messages: list[dict[str, Any]] = [
@@ -250,7 +325,7 @@ class Orchestrator:
     async def _run_anthropic(self, messages: list[dict[str, str]]) -> str:
         """Execute a chat turn using the Anthropic Messages API with tool use."""
         client = self._get_anthropic()
-        system_prompt = self._config.role.system_prompt
+        system_prompt = self._build_system_prompt()
 
         # Convert tool defs to Anthropic format
         anthropic_tools = self._convert_tools_to_anthropic(self._tools.get_tool_definitions())

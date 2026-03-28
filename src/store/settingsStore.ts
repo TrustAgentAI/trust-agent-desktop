@@ -9,7 +9,9 @@ interface SettingsState {
   llmBaseUrl: string;
   deepgramApiKey: string;
   elevenLabsApiKey: string;
+  language: string;
   setSetting: <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => void;
+  setLanguage: (code: string) => void;
   saveAll: () => void;
   loadAll: () => void;
 }
@@ -37,6 +39,7 @@ function saveToStorage(state: Partial<SettingsState>) {
       llmBaseUrl: state.llmBaseUrl,
       deepgramApiKey: state.deepgramApiKey,
       elevenLabsApiKey: state.elevenLabsApiKey,
+      language: state.language,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
@@ -53,9 +56,17 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   llmBaseUrl: (defaults.llmBaseUrl as string) || '',
   deepgramApiKey: (defaults.deepgramApiKey as string) || '',
   elevenLabsApiKey: (defaults.elevenLabsApiKey as string) || '',
+  language: (defaults.language as string) || 'en',
 
   setSetting: (key, value) => {
     set({ [key]: value } as Partial<SettingsState>);
+  },
+
+  setLanguage: (code: string) => {
+    set({ language: code });
+    // Persist immediately so it takes effect on next session
+    const state = get();
+    saveToStorage({ ...state, language: code });
   },
 
   saveAll: () => {
@@ -70,6 +81,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     if (stored.llmBaseUrl !== undefined) set({ llmBaseUrl: stored.llmBaseUrl as string });
     if (stored.deepgramApiKey !== undefined) set({ deepgramApiKey: stored.deepgramApiKey as string });
     if (stored.elevenLabsApiKey !== undefined) set({ elevenLabsApiKey: stored.elevenLabsApiKey as string });
+    if (stored.language !== undefined) set({ language: stored.language as string });
   },
 }));
 

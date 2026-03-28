@@ -81,3 +81,51 @@ class RuntimeConfig(BaseModel):
     role: RoleConfig = Field(default_factory=RoleConfig)
     session_id: str = ""
     debug: bool = False
+    user_language: str = "en"
+    user_language_name: str = "English"
+
+
+# ---------------------------------------------------------------------------
+# Language code to human-readable name mapping (33 supported languages)
+# ---------------------------------------------------------------------------
+
+LANGUAGE_MAP: dict[str, str] = {
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French",
+    "de": "German",
+    "it": "Italian",
+    "pt": "Portuguese",
+    "nl": "Dutch",
+    "ru": "Russian",
+    "zh": "Chinese",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "ar": "Arabic",
+    "hi": "Hindi",
+    "bn": "Bengali",
+    "tr": "Turkish",
+    "pl": "Polish",
+    "uk": "Ukrainian",
+    "sv": "Swedish",
+    "da": "Danish",
+    "no": "Norwegian",
+    "fi": "Finnish",
+    "el": "Greek",
+    "cs": "Czech",
+    "ro": "Romanian",
+    "hu": "Hungarian",
+    "th": "Thai",
+    "vi": "Vietnamese",
+    "id": "Indonesian",
+    "ms": "Malay",
+    "tl": "Filipino",
+    "sw": "Swahili",
+    "he": "Hebrew",
+    "fa": "Persian",
+}
+
+
+def get_language_name(code: str) -> str:
+    """Return the human-readable name for a language code, defaulting to English."""
+    return LANGUAGE_MAP.get(code, "English")

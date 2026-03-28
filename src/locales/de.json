@@ -1,0 +1,94 @@
+{
+  "nav": {
+    "chat": "Chat",
+    "tasks": "Aufgaben",
+    "marketplace": "Marktplatz",
+    "permissions": "Berechtigungen",
+    "settings": "Einstellungen"
+  },
+  "sidebar": {
+    "hired_roles": "Engagierte Rollen",
+    "add_role": "Rolle hinzufuegen",
+    "no_roles": "Keine Rollen engagiert",
+    "tier_free": "KOSTENLOS",
+    "tier_pro": "PRO",
+    "tier_ent": "ENT"
+  },
+  "chat": {
+    "send": "Senden",
+    "placeholder": "Nachricht eingeben...",
+    "thinking": "Denkt nach...",
+    "clear_history": "Verlauf loeschen",
+    "export_chat": "Chat exportieren"
+  },
+  "tasks": {
+    "title": "Aufgaben",
+    "add_task": "Aufgabe hinzufuegen",
+    "in_progress": "In Bearbeitung",
+    "completed": "Abgeschlossen",
+    "pending": "Ausstehend",
+    "no_tasks": "Keine Aufgaben"
+  },
+  "marketplace": {
+    "browse": "Agenten durchsuchen",
+    "search_placeholder": "Agenten suchen...",
+    "hire": "Beauftragen",
+    "install": "Installieren",
+    "trust_score": "Vertrauensbewertung",
+    "price": "Preis",
+    "free": "Kostenlos",
+    "categories": "Kategorien",
+    "filter": "Filtern",
+    "sort": "Sortieren"
+  },
+  "permissions": {
+    "title": "Berechtigungen",
+    "granted": "Gewaehrt",
+    "denied": "Verweigert",
+    "pending_review": "Ueberpruefung ausstehend",
+    "file_access": "Dateizugriff",
+    "network_access": "Netzwerkzugriff",
+    "system_access": "Systemzugriff"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "general": "Allgemein",
+    "appearance": "Darstellung",
+    "language": "Sprache",
+    "notifications": "Benachrichtigungen",
+    "api_keys": "API-Schluessel",
+    "about": "Ueber",
+    "theme": "Thema",
+    "dark_mode": "Dunkelmodus",
+    "light_mode": "Hellmodus"
+  },
+  "connection": {
+    "connected": "Verbunden",
+    "disconnected": "Getrennt",
+    "reconnecting": "Verbindung wird wiederhergestellt...",
+    "gateway_url": "Gateway-URL"
+  },
+  "common": {
+    "loading": "Laden...",
+    "error": "Etwas ist schiefgelaufen",
+    "retry": "Erneut versuchen",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "confirm": "Bestaetigen",
+    "back": "Zurueck",
+    "next": "Weiter",
+    "search": "Suchen",
+    "no_results": "Keine Ergebnisse gefunden",
+    "close": "Schliessen",
+    "open": "Oeffnen",
+    "delete": "Loeschen",
+    "edit": "Bearbeiten"
+  },
+  "auth": {
+    "signin": "Anmelden",
+    "signup": "Registrieren",
+    "logout": "Abmelden",
+    "email": "E-Mail",
+    "password": "Passwort"
+  }
+}
