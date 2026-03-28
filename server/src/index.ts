@@ -4,6 +4,7 @@ import { createExpressMiddleware } from '@trpc/server/adapters/express';
 import { appRouter } from './routers/index';
 import { createContext } from './context';
 import Stripe from 'stripe';
+import { gatewayRouter } from './gateway';
 
 const app = express();
 
@@ -59,6 +60,9 @@ app.post(
 
 // JSON body parsing for all other routes
 app.use(express.json({ limit: '10mb' }));
+
+// B2B Gateway API - REST routes for enterprise customers
+app.use('/v1/gateway', gatewayRouter);
 
 // tRPC middleware
 app.use(
