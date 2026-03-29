@@ -6,11 +6,11 @@
  * SM-2 algorithm determines the next review interval.
  */
 import React from 'react';
-import { RotateCcw, ChevronRight, CheckCircle2, Brain, Eye, SkipForward } from 'lucide-react';
+import { ChevronRight, CheckCircle2, Brain, Eye, SkipForward } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useSpacedRepetitionStore } from '@/store/spacedRepetitionStore';
-import { type Rating, type SpacedRepItem, getRatingLabel, getNextIntervalPreview } from '@/lib/spaced-repetition';
+import { type Rating, type SpacedRepItem, getNextIntervalPreview } from '@/lib/spaced-repetition';
 
 interface SpacedRepetitionReviewProps {
   roleId: string;

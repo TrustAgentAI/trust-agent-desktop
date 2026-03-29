@@ -252,14 +252,6 @@ function formatICSDate(date: Date): string {
 }
 
 /**
- * Generate an RRULE for recurring weekly events.
- */
-function generateRRule(days: DayOfWeek[]): string {
-  const byDay = days.map((d) => RRULE_DAYS[d]).join(',');
-  return `RRULE:FREQ=WEEKLY;BYDAY=${byDay}`;
-}
-
-/**
  * Generate a .ics file content for a set of scheduled sessions.
  */
 export function generateICSFile(

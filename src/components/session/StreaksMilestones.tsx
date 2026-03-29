@@ -3,7 +3,7 @@
  * and celebration animations when new milestones are earned.
  */
 import React, { useEffect, useState } from 'react';
-import { Flame, Award, X, Trophy, Clock, Zap } from 'lucide-react';
+import { Flame, Award, Trophy, Clock, Zap } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { useStreaksStore, Milestone } from '@/store/streaksStore';
 
