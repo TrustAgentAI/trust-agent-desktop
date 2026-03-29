@@ -57,7 +57,8 @@ function formatElapsed(seconds: number): string {
 export function SharedSessionView() {
   const { groupId, sessionId } = useParams<{ groupId: string; sessionId: string }>();
   const navigate = useNavigate();
-  const { userId } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const userId = user?.id ?? null;
 
   const [sessionInfo, setSessionInfo] = React.useState<SessionInfo | null>(null);
   const [messages, setMessages] = React.useState<SharedMessageData[]>([]);

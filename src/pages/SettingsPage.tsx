@@ -1,8 +1,9 @@
 import React from 'react';
-import { Settings, Wifi, WifiOff, ExternalLink, Globe } from 'lucide-react';
+import { Settings, Wifi, WifiOff, ExternalLink, Globe, User } from 'lucide-react';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useAuthStore } from '@/store/authStore';
 import { isTauri } from '@/lib/tauri-compat';
+import { openExternal, AUTH_URLS } from '@/lib/auth';
 import { showToast } from '@/components/ui/Toast';
 import type { LLMProvider } from '@/store/settingsStore';
 
@@ -108,13 +109,9 @@ export function SettingsPage() {
     showToast('Voice settings saved', 'success');
   };
 
-  const handleDisconnect = () => {
+  const handleSignOut = () => {
     auth.logout();
   };
-
-  const maskedKey = auth.token
-    ? auth.token.substring(0, 12) + '...'
-    : 'Not connected';
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 24, maxWidth: 640 }}>
@@ -132,35 +129,78 @@ export function SettingsPage() {
         </span>
       </div>
 
-      {/* API Configuration */}
-      <Section title="API Configuration">
-        <FieldRow label="API Key">
+      {/* Account */}
+      <Section title="Account">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+          {auth.user?.avatarUrl ? (
+            <img
+              src={auth.user.avatarUrl}
+              alt=""
+              style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                background: 'rgba(30,111,255,0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <User size={20} style={{ color: 'var(--color-electric-blue)' }} />
+            </div>
+          )}
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: '#E8EDF5' }}>
+              {auth.user?.name || 'User'}
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
+              {auth.user?.email || 'No email'}
+            </div>
+          </div>
+        </div>
+
+        <FieldRow label="Plan">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span
               style={{
-                fontFamily: 'var(--font-mono)',
                 fontSize: '13px',
+                fontWeight: 600,
                 color: '#E8EDF5',
+                textTransform: 'capitalize',
               }}
             >
-              {maskedKey}
+              {auth.user?.plan || 'Free'}
             </span>
-            <button onClick={handleDisconnect} style={ghostBtnStyle}>
-              Disconnect
+            <button
+              onClick={() => openExternal(AUTH_URLS.billing)}
+              style={{
+                ...ghostBtnStyle,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
+            >
+              Manage subscription <ExternalLink size={10} />
             </button>
           </div>
         </FieldRow>
 
-        <FieldRow label="Gateway URL">
-          <span
+        <FieldRow label="Password">
+          <button
+            onClick={() => openExternal(AUTH_URLS.changePassword)}
             style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '13px',
-              color: 'var(--color-text-muted)',
+              ...ghostBtnStyle,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
             }}
           >
-            {API_URL}
-          </span>
+            Change password <ExternalLink size={10} />
+          </button>
         </FieldRow>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
@@ -201,6 +241,18 @@ export function SettingsPage() {
               {connectionResult}
             </span>
           )}
+        </div>
+
+        <div style={{ marginTop: 12 }}>
+          <button
+            onClick={handleSignOut}
+            style={{
+              ...ghostBtnStyle,
+              color: 'var(--color-error)',
+            }}
+          >
+            Sign out
+          </button>
         </div>
       </Section>
 

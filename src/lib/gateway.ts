@@ -30,6 +30,7 @@ type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
 
 interface SessionTokenResponse {
   token: string;
+  refreshToken: string;
   user: User;
   expiresAt: number;
 }
@@ -135,11 +136,21 @@ export class GatewayError extends Error {
 
 export const gateway = {
   auth: {
+    /** Sign in with email and password */
     async signin(email: string, password: string): Promise<SessionTokenResponse> {
       return request<SessionTokenResponse>('POST', '/api/v1/auth/signin', { email, password });
     },
+    /** Sign out the current session */
     async signout(): Promise<void> {
       await request<void>('POST', '/api/v1/auth/signout');
+    },
+    /** Refresh JWT token */
+    async refreshToken(refreshToken: string): Promise<{ token: string; refreshToken: string }> {
+      return request<{ token: string; refreshToken: string }>('POST', '/api/v1/auth/refresh', { refreshToken });
+    },
+    /** Get current user profile */
+    async me(): Promise<User> {
+      return request<User>('GET', '/api/v1/auth/me');
     },
   },
 

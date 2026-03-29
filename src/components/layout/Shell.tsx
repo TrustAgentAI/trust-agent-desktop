@@ -6,11 +6,14 @@ import {
   ScrollText,
   Settings,
   Plus,
+  LogOut,
+  User,
 } from 'lucide-react';
 import { TitleBar } from '@/components/layout/TitleBar';
 import { ConnectionStatus } from '@/components/layout/ConnectionStatus';
 import { AgentCard } from '@/components/agent/AgentCard';
 import { useAgentStore } from '@/store/agentStore';
+import { useAuthStore } from '@/store/authStore';
 import type { HiredRole } from '@/store/agentStore';
 
 type NavKey = 'dashboard' | 'permissions' | 'audit' | 'settings';
@@ -28,6 +31,7 @@ interface ShellProps {
 
 export function Shell({ children }: ShellProps) {
   const { roles, activeRoleId, setActiveRole } = useAgentStore();
+  const { user, logout } = useAuthStore();
   const [rightPanelOpen, setRightPanelOpen] = React.useState(true);
   const navigate = useNavigate();
   const location = useLocation();
@@ -190,7 +194,96 @@ export function Shell({ children }: ShellProps) {
             })}
           </div>
 
-          {/* Connection status at very bottom */}
+          {/* User profile + logout at very bottom */}
+          <div
+            style={{
+              borderTop: '1px solid var(--color-border)',
+              padding: '10px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            {/* Avatar */}
+            {user?.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt=""
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  flexShrink: 0,
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: '50%',
+                  background: 'rgba(30,111,255,0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <User size={14} style={{ color: 'var(--color-electric-blue)' }} />
+              </div>
+            )}
+
+            {/* Name / plan */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: '#E8EDF5',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontFamily: 'var(--font-sans)',
+                }}
+              >
+                {user?.name || user?.email || 'User'}
+              </div>
+              <div
+                style={{
+                  fontSize: 10,
+                  color: 'var(--color-text-muted)',
+                  fontFamily: 'var(--font-mono)',
+                  textTransform: 'capitalize',
+                }}
+              >
+                {user?.plan || 'Free'} plan
+              </div>
+            </div>
+
+            {/* Logout */}
+            <button
+              onClick={logout}
+              title="Sign out"
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--color-text-muted)',
+                cursor: 'pointer',
+                padding: 4,
+                display: 'flex',
+                alignItems: 'center',
+                borderRadius: 'var(--radius-sm)',
+                transition: 'color 150ms ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-error)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-muted)'; }}
+            >
+              <LogOut size={14} />
+            </button>
+          </div>
+
+          {/* Connection status */}
           <div style={{ borderTop: '1px solid var(--color-border)' }}>
             <ConnectionStatus />
           </div>

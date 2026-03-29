@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
+import { configureGateway } from '@/lib/gateway';
 import { Shell } from '@/components/layout/Shell';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { SettingsPage } from '@/pages/SettingsPage';
@@ -10,6 +11,17 @@ import { MarketplacePanel } from '@/components/marketplace/MarketplacePanel';
 import { StudyGroupList } from '@/components/study/StudyGroupList';
 import { StudyGroupDetail } from '@/components/study/StudyGroupDetail';
 import { SharedSessionView } from '@/components/study/SharedSessionView';
+
+// Wire gateway to use JWT from auth store
+configureGateway({
+  getToken: () => useAuthStore.getState().token,
+  onTokenExpired: async () => {
+    await useAuthStore.getState().refreshSession();
+  },
+});
+
+// Restore session from localStorage on app start
+useAuthStore.getState().restoreSession();
 
 const LoginPageLazy = React.lazy(() =>
   import('@/pages/LoginPage').then((m) => ({ default: m.LoginPage })),

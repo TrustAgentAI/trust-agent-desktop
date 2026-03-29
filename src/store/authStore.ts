@@ -1,40 +1,49 @@
 /**
- * Authentication store - browser-compatible, persists to localStorage.
- * Replaces direct @tauri-apps/plugin-store usage.
+ * Authentication store - manages user session state.
+ * Persists JWT + user data to localStorage via tauri-compat.
  */
 import { create } from 'zustand';
-import { localStore } from '@/lib/tauri-compat';
-import { login as authLogin } from '@/lib/auth';
+import {
+  loginWithEmail,
+  loginWithGoogle as authLoginWithGoogle,
+  clearSession,
+  getSession,
+  refreshToken as authRefreshToken,
+  type AuthUser,
+} from '@/lib/auth';
 
 interface AuthState {
   token: string | null;
-  userId: string | null;
+  refreshToken: string | null;
+  user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  login: (apiKey: string) => Promise<void>;
-  loginBrowserMode: (apiKey: string) => void;
+
+  login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => void;
   restoreSession: () => void;
+  refreshSession: () => Promise<void>;
   clearError: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  token: localStore.get<string>('auth_token'),
-  userId: localStore.get<string>('auth_userId'),
-  isAuthenticated: localStore.get<string>('auth_token') !== null,
+export const useAuthStore = create<AuthState>((set, get) => ({
+  token: null,
+  refreshToken: null,
+  user: null,
+  isAuthenticated: false,
   isLoading: false,
   error: null,
 
-  login: async (apiKey: string) => {
+  login: async (email: string, password: string) => {
     set({ isLoading: true, error: null });
     try {
-      const result = await authLogin(apiKey);
-      localStore.set('auth_token', result.token);
-      localStore.set('auth_userId', result.userId);
+      const result = await loginWithEmail(email, password);
       set({
         token: result.token,
-        userId: result.userId,
+        refreshToken: result.refreshToken,
+        user: result.user,
         isAuthenticated: true,
         isLoading: false,
       });
@@ -45,36 +54,52 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  loginBrowserMode: (apiKey: string) => {
-    // In browser mode, accept any key starting with "ta_" for development
-    const userId = `user_${Date.now()}`;
-    localStore.set('auth_token', apiKey);
-    localStore.set('auth_userId', userId);
-    set({
-      token: apiKey,
-      userId,
-      isAuthenticated: true,
-      isLoading: false,
-      error: null,
-    });
+  loginWithGoogle: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      await authLoginWithGoogle();
+      // The actual authentication happens via callback - just show loading state
+      // The callback handler will call restoreSession or set state directly
+      set({ isLoading: false });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Google sign-in failed.';
+      set({ error: message, isLoading: false });
+    }
   },
 
   logout: () => {
-    localStore.remove('auth_token');
-    localStore.remove('auth_userId');
+    clearSession();
     set({
       token: null,
-      userId: null,
+      refreshToken: null,
+      user: null,
       isAuthenticated: false,
       error: null,
     });
   },
 
   restoreSession: () => {
-    const token = localStore.get<string>('auth_token');
-    const userId = localStore.get<string>('auth_userId');
-    if (token && userId) {
-      set({ token, userId, isAuthenticated: true });
+    const session = getSession();
+    if (session && session.token && session.user) {
+      set({
+        token: session.token,
+        refreshToken: session.refreshToken,
+        user: session.user,
+        isAuthenticated: true,
+      });
+    }
+  },
+
+  refreshSession: async () => {
+    try {
+      const result = await authRefreshToken();
+      set({
+        token: result.token,
+        refreshToken: result.refreshToken,
+      });
+    } catch {
+      // If refresh fails, log the user out
+      get().logout();
     }
   },
 
