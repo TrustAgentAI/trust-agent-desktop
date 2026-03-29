@@ -441,6 +441,61 @@ function deriveSkillCategory(slug: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Seed Pricing Tiers
+// ---------------------------------------------------------------------------
+
+async function seedPricingTiers() {
+  const tiers = [
+    {
+      name: 'starter',
+      displayName: 'Starter',
+      priceGBP: 9.99,
+      maxRoles: 1,
+      maxChildProfiles: 0,
+      features: ['brain', 'environments', 'voice', 'languages', 'streaks'],
+    },
+    {
+      name: 'essential',
+      displayName: 'Essential',
+      priceGBP: 19.99,
+      maxRoles: 5,
+      maxChildProfiles: 0,
+      features: ['brain', 'environments', 'voice', 'voice_clone', 'languages',
+        'streaks', 'progress_reports', 'scheduling', 'session_modes'],
+    },
+    {
+      name: 'family',
+      displayName: 'Family',
+      priceGBP: 24.99,
+      maxRoles: 5,
+      maxChildProfiles: 2,
+      features: ['brain', 'environments', 'voice', 'voice_clone', 'languages',
+        'streaks', 'progress_reports', 'guardian_dashboard', 'child_limits',
+        'wellbeing_monitoring', 'safeguarding'],
+    },
+    {
+      name: 'professional',
+      displayName: 'Professional',
+      priceGBP: 39.99,
+      maxRoles: 10,
+      maxChildProfiles: 0,
+      features: ['brain', 'environments', 'voice', 'voice_clone', 'languages',
+        'streaks', 'progress_reports', 'scheduling', 'session_modes',
+        'b2b_gateway', 'company_brain', 'hitl', 'school_licensing'],
+    },
+  ];
+
+  for (const tier of tiers) {
+    await prisma.pricingTier.upsert({
+      where: { name: tier.name },
+      create: tier,
+      update: tier,
+    });
+  }
+  console.log('  Pricing tiers seeded');
+}
+
+// ---------------------------------------------------------------------------
 // Main seed
 // ---------------------------------------------------------------------------
 
@@ -726,8 +781,14 @@ async function main() {
     }
   }
 
+  // ── Step 3: Seed Pricing Tiers ──────────────────────────────────────────
+
+  console.log('\nSeeding pricing tiers...');
+  await seedPricingTiers();
+
   // ── Summary ────────────────────────────────────────────────────────────
 
+  const pricingTierCount = await prisma.pricingTier.count();
   const roleCount = await prisma.role.count();
   const skillCount = await prisma.skill.count();
   const roleSkillCount = await prisma.roleSkill.count();
@@ -738,6 +799,7 @@ async function main() {
   console.log(`  Skills:     ${skillCount}`);
   console.log(`  RoleSkills: ${roleSkillCount}`);
   console.log(`  Audits:     ${auditCount}`);
+  console.log(`  Pricing:    ${pricingTierCount}`);
   console.log('  Users:      0 (no fake users created)');
 }
 

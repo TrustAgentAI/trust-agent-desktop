@@ -14,9 +14,11 @@ import {
   ChevronLeft,
   Sparkles,
   Check,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { api } from '@/lib/api';
 
 // --- Types ---
 
@@ -131,30 +133,16 @@ const LEVEL_OPTIONS: { value: QuizLevel; label: string; description: string }[] 
   },
 ];
 
-// Maps goal to recommended role
-function getRecommendedRole(goal: QuizGoal, audience: QuizAudience): { id: string; name: string } {
-  if (audience === 'child') {
-    if (goal === 'education') return { id: 'gcse-tutor', name: 'GCSE Tutor' };
-    if (goal === 'language') return { id: 'language-buddy', name: 'Language Buddy' };
-    return { id: 'learning-companion', name: 'Learning Companion' };
-  }
-
-  switch (goal) {
-    case 'education':
-      return { id: 'study-companion', name: 'Study Companion' };
-    case 'health':
-      return { id: 'health-coach', name: 'Health Coach' };
-    case 'language':
-      return { id: 'language-tutor', name: 'Language Tutor' };
-    case 'career':
-      return { id: 'career-advisor', name: 'Career Advisor' };
-    case 'life-navigation':
-      return { id: 'life-navigator', name: 'Life Navigator' };
-    case 'companionship':
-      return { id: 'daily-companion', name: 'Daily Companion' };
-    default:
-      return { id: 'general-assistant', name: 'General Assistant' };
-  }
+// Recommended role from the server - no longer hardcoded
+interface RecommendedRole {
+  id: string;
+  slug: string;
+  name: string;
+  companionName: string;
+  category: string;
+  tagline: string;
+  trustScore: number;
+  badge: string;
 }
 
 // Get contextual level label based on goal
@@ -187,6 +175,9 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
   const [audience, setAudience] = React.useState<QuizAudience | null>(null);
   const [level, setLevel] = React.useState<QuizLevel | null>(null);
   const [startTime] = React.useState(Date.now());
+  const [submitting, setSubmitting] = React.useState(false);
+  const [recommended, setRecommended] = React.useState<RecommendedRole | null>(null);
+  const [submitError, setSubmitError] = React.useState<string | null>(null);
 
   const canNext =
     (step === 0 && goal !== null) ||
@@ -194,13 +185,34 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
     (step === 2 && level !== null) ||
     step === 3;
 
-  const recommended = goal && audience ? getRecommendedRole(goal, audience) : null;
-
-  const handleNext = () => {
-    if (step < STEPS.length - 1) {
+  const handleNext = async () => {
+    if (step < STEPS.length - 2) {
+      // Steps 0 and 1 - just advance
       setStep(step + 1);
-    } else if (goal && audience && level && recommended) {
-      // Save to localStorage
+    } else if (step === 2 && goal && audience && level) {
+      // Submit quiz to server and get recommendation
+      setSubmitting(true);
+      setSubmitError(null);
+      try {
+        const result = await api.post<{
+          quizResponseId: string;
+          recommendedRole: RecommendedRole | null;
+        }>('/api/trpc/onboarding.submitQuiz', {
+          json: { answers: { goal, audience, level } },
+        });
+        // Handle tRPC response shape
+        const data = (result as any)?.result?.data ?? result;
+        if (data.recommendedRole) {
+          setRecommended(data.recommendedRole);
+        }
+        setStep(3);
+      } catch (err: any) {
+        setSubmitError(err?.message || 'Failed to submit quiz');
+      } finally {
+        setSubmitting(false);
+      }
+    } else if (step === 3 && goal && audience && level && recommended) {
+      // Final step - complete onboarding
       const answers: QuizAnswers = {
         goal,
         audience,
@@ -208,12 +220,6 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
         recommendedRoleId: recommended.id,
         recommendedRoleName: recommended.name,
       };
-      try {
-        localStorage.setItem('ta_onboarding_quiz', JSON.stringify(answers));
-        localStorage.setItem('ta_onboarding_completed', 'true');
-      } catch {
-        // Storage might be blocked
-      }
       onComplete(answers);
     }
   };
@@ -565,8 +571,30 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
           </div>
         )}
 
+        {/* Loading state while submitting quiz */}
+        {submitting && (
+          <div style={{ maxWidth: 440, width: '100%', textAlign: 'center', paddingTop: 60 }}>
+            <Loader2 size={40} style={{ color: 'var(--color-electric-blue)', animation: 'spin 1s linear infinite', marginBottom: 16 }} />
+            <div style={{ fontSize: 14, color: 'var(--color-text-muted)', fontFamily: 'var(--font-sans)' }}>
+              Finding your best match...
+            </div>
+          </div>
+        )}
+
+        {/* Error state */}
+        {submitError && (
+          <div style={{ maxWidth: 440, width: '100%', textAlign: 'center', paddingTop: 40 }}>
+            <div style={{ fontSize: 14, color: 'var(--color-error)', fontFamily: 'var(--font-sans)', marginBottom: 12 }}>
+              {submitError}
+            </div>
+            <Button variant="primary" size="md" onClick={() => { setSubmitError(null); setStep(2); }}>
+              Try Again
+            </Button>
+          </div>
+        )}
+
         {/* Step 4: Result */}
-        {step === 3 && recommended && (
+        {step === 3 && recommended && !submitting && (
           <div style={{ maxWidth: 440, width: '100%', textAlign: 'center' }}>
             <div
               style={{

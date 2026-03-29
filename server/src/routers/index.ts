@@ -9,6 +9,18 @@ import { paymentsRouter } from './payments';
 import { adminRouter } from './admin';
 import { enterpriseRouter } from './enterprise';
 import { studyGroupsRouter } from './study-groups';
+import { onboardingRouter } from './onboarding';
+import { guardianRouter } from './guardian';
+import { reportsRouter } from './reports';
+import { milestonesRouter } from './milestones';
+import { spacedRepetitionRouter } from './spaced-repetition';
+import { schedulingRouter } from './scheduling';
+import { giftsRouter } from './gifts';
+import { notificationsRouter } from './notifications';
+import { referralsRouter } from './referrals';
+import { collaborationRouter } from './collaboration';
+import { schoolRouter } from './school';
+import { offlineBrainRouter } from './offline-brain';
 
 export const appRouter = router({
   auth: authRouter,
@@ -21,6 +33,18 @@ export const appRouter = router({
   admin: adminRouter,
   enterprise: enterpriseRouter,
   studyGroups: studyGroupsRouter,
+  onboarding: onboardingRouter,
+  guardian: guardianRouter,
+  reports: reportsRouter,
+  milestones: milestonesRouter,
+  'spaced-repetition': spacedRepetitionRouter,
+  scheduling: schedulingRouter,
+  gifts: giftsRouter,
+  notifications: notificationsRouter,
+  referrals: referralsRouter,
+  collaboration: collaborationRouter,
+  school: schoolRouter,
+  offlineBrain: offlineBrainRouter,
 });
 
 export type AppRouter = typeof appRouter;

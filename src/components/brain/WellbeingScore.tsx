@@ -3,22 +3,29 @@
  * a status indicator, and a link to the guardian dashboard.
  * Never shows session content - only the wellbeing signal.
  */
-import { useMemo } from 'react';
-import { Shield, TrendingUp, TrendingDown, Minus, ExternalLink, AlertTriangle } from 'lucide-react';
+import { useMemo, useEffect, useState } from 'react';
+import { Shield, TrendingUp, TrendingDown, Minus, ExternalLink, AlertTriangle, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import {
-  getWeeklyTrend,
-  getCurrentWeekScore,
-  getWellbeingStatus,
-  getPendingAlerts,
-  type WeeklyScore,
-} from '@/lib/wellbeing';
+import { api } from '@/lib/api';
 
 interface WellbeingScoreProps {
+  hireId?: string;
   accentColor?: string;
   onNavigateToGuardian?: () => void;
   compact?: boolean;
+}
+
+interface WellbeingData {
+  score: number;
+  trend: string;
+  signals: Record<string, unknown>;
+  createdAt: string;
+}
+
+interface WeeklyScore {
+  weekId: string;
+  score: number;
 }
 
 function scoreToColor(score: number): string {
@@ -98,17 +105,67 @@ function EmptyDot() {
 }
 
 export function WellbeingScore({
+  hireId,
   accentColor,
   onNavigateToGuardian,
   compact = false,
 }: WellbeingScoreProps) {
-  // accentColor reserved for future per-role theming
   void accentColor;
 
-  const trend = useMemo(() => getWeeklyTrend(5), []);
-  const currentScore = useMemo(() => getCurrentWeekScore(), []);
-  const status = useMemo(() => getWellbeingStatus(), []);
-  const pendingAlerts = useMemo(() => getPendingAlerts(), []);
+  const [wellbeingSignals, setWellbeingSignals] = useState<WellbeingData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch wellbeing signals from API via the hires endpoint or sessions data
+  useEffect(() => {
+    async function loadWellbeing() {
+      setLoading(true);
+      try {
+        // Get hire data which includes SessionMemory wellbeing
+        if (hireId) {
+          const res = await api.get<any>(`/api/trpc/hires.getHire?input=${encodeURIComponent(JSON.stringify({ json: { hireId } }))}`);
+          const data = res?.result?.data ?? res;
+          if (data?.memory) {
+            setWellbeingSignals([{
+              score: data.memory.wellbeingScore || 75,
+              trend: data.memory.wellbeingTrend || 'stable',
+              signals: {},
+              createdAt: data.memory.lastWellbeingAt || new Date().toISOString(),
+            }]);
+          }
+        }
+      } catch {
+        // API not available - use defaults
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadWellbeing();
+  }, [hireId]);
+
+  // Compute display values from API data
+  const latestSignal = wellbeingSignals[0] || null;
+  const currentScoreValue = latestSignal ? Math.round(latestSignal.score / 20) : 3; // Convert 0-100 to 1-5 scale
+  const currentScore: WeeklyScore | null = latestSignal
+    ? { weekId: 'current', score: currentScoreValue }
+    : null;
+  const status = latestSignal?.trend as 'stable' | 'improving' | 'declining' || 'stable';
+
+  // Build 5-week trend (using available data or empty)
+  const trend: (WeeklyScore | null)[] = useMemo(() => {
+    const result: (WeeklyScore | null)[] = [];
+    for (let i = 0; i < 5; i++) {
+      if (i === 4 && currentScore) {
+        result.push(currentScore);
+      } else {
+        result.push(null);
+      }
+    }
+    return result;
+  }, [currentScore]);
+
+  const pendingAlerts: { message: string }[] = status === 'declining' && latestSignal
+    ? [{ message: `Wellbeing score has declined. Current: ${latestSignal.score}/100.` }]
+    : [];
 
   const statusConfig = {
     stable: {
@@ -131,10 +188,7 @@ export function WellbeingScore({
   const statusInfo = statusConfig[status];
 
   // Fill to exactly 5 dots
-  const dots: (WeeklyScore | null)[] = [];
-  for (let i = 0; i < 5; i++) {
-    dots.push(trend[i] || null);
-  }
+  const dots = trend;
 
   if (compact) {
     return (

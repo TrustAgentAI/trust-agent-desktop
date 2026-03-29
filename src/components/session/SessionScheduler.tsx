@@ -24,6 +24,7 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useScheduleStore } from '@/store/scheduleStore';
+import api from '@/lib/api';
 import {
   type DayOfWeek,
   DAYS_OF_WEEK,
@@ -72,12 +73,57 @@ export function SessionScheduler({
   const missedSessions = getMissedSessions();
   const suggestions = getSuggestedSchedule();
 
-  const handleToggleSlot = (day: DayOfWeek, hour: number) => {
+  // B.9: Toggle slot - create/delete schedule in DB via tRPC
+  const handleToggleSlot = async (day: DayOfWeek, hour: number) => {
+    const isActive = hasSlot(day, hour, 0);
+
+    if (!isActive) {
+      // Create schedule via tRPC
+      try {
+        const result = await api.post<{ scheduleId: string; nextSessionAt: string; icsUrl: string }>(
+          '/trpc/scheduling.createSchedule',
+          { json: { hireId: roleId, dayOfWeek: day, time: `${String(hour).padStart(2, '0')}:00`, durationMins: defaultDuration } }
+        );
+        console.log('Schedule created:', result.scheduleId);
+      } catch (err) {
+        console.error('Failed to create schedule via tRPC:', err);
+      }
+    }
+
+    // Update local store (handles both add and remove in UI)
     toggleSlot(day, hour, 0, roleId, roleName, defaultDuration);
   };
 
-  const handleDownloadICS = () => {
+  // B.9: Download ICS via tRPC
+  const handleDownloadICS = async () => {
     if (roleSlots.length === 0) return;
+
+    // Try to get ICS from server first
+    try {
+      const schedules = await api.get<{ result: { data: Array<{ id: string; icsUrl: string }> } }>(
+        `/trpc/scheduling.getMySchedules?input=${encodeURIComponent(JSON.stringify({ hireId: roleId }))}`
+      );
+      const serverSchedules = schedules?.result?.data || [];
+      if (serverSchedules.length > 0 && serverSchedules[0].icsUrl) {
+        // Download from server ICS endpoint
+        const icsResponse = await fetch(serverSchedules[0].icsUrl);
+        if (icsResponse.ok) {
+          const blob = await icsResponse.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `trust-agent-${roleName.toLowerCase().replace(/\s+/g, '-')}.ics`;
+          a.click();
+          URL.revokeObjectURL(url);
+          setCalendarSynced(true);
+          return;
+        }
+      }
+    } catch {
+      // Fall through to local generation
+    }
+
+    // Fall back to local ICS generation
     downloadICSFile(roleSlots, `trust-agent-${roleName.toLowerCase().replace(/\s+/g, '-')}.ics`);
     setCalendarSynced(true);
   };

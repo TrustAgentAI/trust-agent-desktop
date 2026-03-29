@@ -7,6 +7,7 @@ import { useSession } from '@/store/sessionStore';
 import { useAgentStore } from '@/store/agentStore';
 import { shouldUseMockAgent, getMockResponse } from '@/lib/mockAgent';
 import { wsClient } from '@/lib/ws';
+import api from '@/lib/api';
 import {
   evaluateSession,
   shouldForceEndSession,
@@ -47,6 +48,9 @@ export function SessionView({
   const bottomRef = React.useRef<HTMLDivElement>(null);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // tRPC session tracking
+  const [sessionId, setSessionId] = React.useState<string | null>(null);
 
   // Upload state
   const [uploadedFile, setUploadedFile] = React.useState<{ name: string; size: number; type: string; dataUrl: string } | null>(null);
@@ -95,9 +99,35 @@ export function SessionView({
           setBreakSuggestions(suggestions);
         }
 
+        // B.10: Log dependency warnings to DB via tRPC
+        if (suggestions.length > 0 && sessionId) {
+          const warningType = suggestions.some((s) => s.isHardLimit) ? 'HARD_LIMIT' : 'WARNING_EMITTED';
+          api.post('/trpc/sessions.logDependencyEvent', {
+            json: {
+              sessionId,
+              eventType: warningType,
+              elapsedMins: elapsedMinutes,
+              details: suggestions.map((s) => s.message).join('; '),
+            },
+          }).catch((err: unknown) => console.error('Failed to log dependency event:', err));
+        }
+
         // Force end for children hitting hard limit
         if (shouldForceEndSession(elapsedMinutes, isChildAccount)) {
           recordSessionUsage(elapsedMinutes);
+
+          // B.10: Log force end to DB
+          if (sessionId) {
+            api.post('/trpc/sessions.logDependencyEvent', {
+              json: {
+                sessionId,
+                eventType: 'FORCE_END',
+                elapsedMins: elapsedMinutes,
+                details: 'Child account daily limit reached - session force ended',
+              },
+            }).catch((err: unknown) => console.error('Failed to log force end:', err));
+          }
+
           const forceMsg: ChatMessageData = {
             id: `sys-force-${Date.now()}`,
             role: 'agent',
@@ -170,8 +200,47 @@ export function SessionView({
     e.target.value = '';
   };
 
-  const handleUploadSubmit = () => {
+  // B.7: Upload document via tRPC S3 signed URL
+  const handleUploadSubmit = async () => {
     if (!uploadedFile || !activeRoleId) return;
+
+    // B.7: Get presigned upload URL from tRPC
+    let documentId: string | null = null;
+    try {
+      const uploadResult = await api.post<{
+        documentId: string;
+        presignedUploadUrl: string;
+        documentUrl: string;
+        s3Key: string;
+      }>('/trpc/sessions.uploadDocument', {
+        json: {
+          hireId: activeRoleId,
+          fileName: uploadedFile.name,
+          mimeType: uploadedFile.type,
+          fileSizeBytes: uploadedFile.size,
+        },
+      });
+
+      documentId = uploadResult.documentId;
+
+      // Upload file to S3 via presigned URL
+      const fileBlob = await fetch(uploadedFile.dataUrl).then((r) => r.blob());
+      await fetch(uploadResult.presignedUploadUrl, {
+        method: 'PUT',
+        body: fileBlob,
+        headers: { 'Content-Type': uploadedFile.type },
+      });
+
+      // Link document to active session if one exists
+      if (sessionId && documentId) {
+        await api.post('/trpc/sessions.linkDocumentToSession', {
+          json: { documentId, sessionId },
+        });
+      }
+    } catch (err) {
+      console.error('Failed to upload document via tRPC:', err);
+      // Fall through to still show the message in chat
+    }
 
     // Add user message with file reference
     const ext = uploadedFile.name.split('.').pop()?.toLowerCase() || '';
@@ -191,11 +260,11 @@ export function SessionView({
       role: 'user',
       content: `[Uploaded: ${uploadedFile.name} (${formatFileSize(uploadedFile.size)})]\n\n${uploadContext}`,
       timestamp: Date.now(),
-      metadata: { fileName: uploadedFile.name, fileSize: uploadedFile.size, fileType: uploadedFile.type },
+      metadata: { fileName: uploadedFile.name, fileSize: uploadedFile.size, fileType: uploadedFile.type, documentId },
     };
     addMessage(activeRoleId, userMsg);
 
-    // Simulate companion marking response
+    // Simulate companion marking response (will be replaced by real AI when gateway is connected)
     setIsStreaming(true);
     setTimeout(async () => {
       if (shouldUseMockAgent()) {
@@ -216,14 +285,27 @@ export function SessionView({
     setShowUploadPreview(false);
   };
 
-  // Exam mode handlers
-  const handleStartExam = (duration: ExamDuration) => {
+  // B.6: Exam mode handlers - wired to tRPC
+  const handleStartExam = async (duration: ExamDuration) => {
     setExamDuration(duration * 60);
     setExamElapsed(0);
     setExamStatus('in_progress');
     setExamReport(null);
 
+    // B.6: Start exam session via tRPC
     if (activeRoleId) {
+      try {
+        const result = await api.post<{ sessionId: string; examModeActive: boolean }>(
+          '/trpc/sessions.startSession',
+          { json: { hireId: activeRoleId, mode: 'exam', examMode: true, timeBudgetMins: duration } }
+        );
+        if (result.sessionId) {
+          setSessionId(result.sessionId);
+        }
+      } catch (err) {
+        console.error('Failed to start exam session via tRPC:', err);
+      }
+
       const examMsg: ChatMessageData = {
         id: `sys-exam-${Date.now()}`,
         role: 'agent',
@@ -235,13 +317,34 @@ export function SessionView({
     }
   };
 
-  const handleEndExam = () => {
+  const handleEndExam = async () => {
     if (examTimerRef.current) clearInterval(examTimerRef.current);
     setExamStatus('marking');
+
+    // Generate exam report
+    const report = generateMockExamReport(examElapsed);
+
+    // B.6: Save exam results to DB via tRPC
+    if (sessionId) {
+      try {
+        await api.post('/trpc/sessions.endSession', {
+          json: {
+            sessionId,
+            examScore: report.marksAwarded,
+            examTotal: report.totalMarks,
+            examPercentage: report.percentage,
+            examGrade: report.grade,
+          },
+        });
+      } catch (err) {
+        console.error('Failed to save exam results via tRPC:', err);
+      }
+    }
+
     setTimeout(() => {
-      setExamReport(generateMockExamReport(examElapsed));
+      setExamReport(report);
       setExamStatus('complete');
-    }, 2000);
+    }, 1500);
   };
 
   // Scroll to bottom on new messages

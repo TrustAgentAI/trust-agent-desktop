@@ -3,9 +3,21 @@
  * and celebration animations when new milestones are earned.
  */
 import React, { useEffect, useState } from 'react';
-import { Flame, Award, Trophy, Clock, Zap } from 'lucide-react';
+import { Flame, Award, Trophy, Clock, Zap, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { useStreaksStore, Milestone } from '@/store/streaksStore';
+import { api } from '@/lib/api';
+
+// ── Types from API ──
+interface Milestone {
+  id: string;
+  hireId: string | null;
+  type: string;
+  label: string;
+  achievedAt: string;
+  celebrated: boolean;
+  // For backwards compat with celebration overlay
+  roleName?: string;
+}
 
 // --- Celebration overlay ---
 
@@ -196,7 +208,7 @@ function MilestoneBadge({ milestone }: { milestone: Milestone }) {
             fontFamily: 'var(--font-mono)',
           }}
         >
-          {new Date(milestone.achievedAt).toLocaleDateString()}
+          {new Date(milestone.achievedAt).toLocaleDateString('en-GB')}
         </div>
       </div>
     </div>
@@ -206,26 +218,59 @@ function MilestoneBadge({ milestone }: { milestone: Milestone }) {
 // --- Main component ---
 
 interface StreaksMilestonesProps {
+  hireId?: string;
+  streakDays?: number;
+  longestStreakDays?: number;
   accentColor?: string;
   compact?: boolean;
 }
 
-export function StreaksMilestones({ accentColor, compact = false }: StreaksMilestonesProps) {
-  const {
-    currentStreak,
-    longestStreak,
-    milestonesReached,
-    pendingCelebrations,
-    dismissCelebration,
-  } = useStreaksStore();
+export function StreaksMilestones({ hireId, streakDays, longestStreakDays, accentColor, compact = false }: StreaksMilestonesProps) {
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pendingCelebrations, setPendingCelebrations] = useState<Milestone[]>([]);
 
   const accent = accentColor || 'var(--color-electric-blue)';
+  const currentStreak = streakDays ?? 0;
+  const longestStreak = longestStreakDays ?? 0;
+
+  // Fetch milestones from API
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      try {
+        const res = await api.post<any>('/api/trpc/milestones.getMilestones', {
+          json: hireId ? { hireId } : {},
+        });
+        const data: Milestone[] = res?.result?.data ?? res ?? [];
+        setMilestones(data);
+        // Uncelebrated milestones are pending celebrations
+        setPendingCelebrations(data.filter((m) => !m.celebrated));
+      } catch {
+        // API not available
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [hireId]);
+
+  const dismissCelebration = async (milestoneId: string) => {
+    setPendingCelebrations((prev) => prev.filter((m) => m.id !== milestoneId));
+    try {
+      await api.post('/api/trpc/milestones.celebrateMilestone', { json: { milestoneId } });
+    } catch {
+      // ignore
+    }
+  };
 
   // Show the first pending celebration
   const activeCelebration = pendingCelebrations.length > 0 ? pendingCelebrations[0] : null;
 
   // Sort milestones newest first
-  const sortedMilestones = [...milestonesReached].sort((a, b) => b.achievedAt - a.achievedAt);
+  const sortedMilestones = [...milestones].sort(
+    (a, b) => new Date(b.achievedAt).getTime() - new Date(a.achievedAt).getTime(),
+  );
 
   if (compact) {
     return (

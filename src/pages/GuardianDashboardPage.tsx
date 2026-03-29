@@ -14,10 +14,46 @@ import {
   Settings,
   Plus,
   Eye,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { useGuardianStore, type DependentProfile, type WellbeingFlag } from '@/store/guardianStore';
+import { api } from '@/lib/api';
+
+// ── Types from API ──
+interface LinkedChild {
+  linkId: string;
+  childId: string;
+  childName: string | null;
+  childEmail: string;
+  accountType: string;
+  maxDailyMins: number;
+  createdAt: string;
+}
+
+interface GuardianAlertData {
+  id: string;
+  childName: string;
+  childId: string;
+  type: string;
+  message: string;
+  hireId: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+interface ChildActivity {
+  childId: string;
+  days: number;
+  sessions: { id: string; hireId: string; startedAt: string; endedAt: string | null; durationSeconds: number | null; messageCount: number; environmentSlug: string }[];
+  hires: { id: string; roleName: string; companionName: string; category: string; streakDays: number; longestStreakDays: number; lastSessionAt: string | null; sessionCount: number; totalMinutes: number }[];
+  totalSessionCount: number;
+  totalSessionMinutes: number;
+  dependencyFlagCount: number;
+  wellbeingScore: number;
+  wellbeingTrend: string;
+  safeguardingAlerts: { id: string; type: string; message: string; readAt: string | null; createdAt: string }[];
+}
 
 // --- Add Dependent Modal ---
 
@@ -182,25 +218,87 @@ function AddDependentModal({ onClose, onAdd }: { onClose: () => void; onAdd: (p:
 // --- Main Page ---
 
 export function GuardianDashboardPage() {
-  const { dependents, notifications, addDependent, updateTimeLimit, acknowledgeFlag } =
-    useGuardianStore();
-  const [selectedDepId, setSelectedDepId] = React.useState<string | null>(
-    dependents.length > 0 ? dependents[0].id : null,
-  );
+  const [children, setChildren] = React.useState<LinkedChild[]>([]);
+  const [alerts, setAlerts] = React.useState<GuardianAlertData[]>([]);
+  const [activity, setActivity] = React.useState<ChildActivity | null>(null);
+  const [selectedChildId, setSelectedChildId] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(true);
   const [showAddModal, setShowAddModal] = React.useState(false);
   const [showTimeLimitEditor, setShowTimeLimitEditor] = React.useState(false);
   const [timeLimitValue, setTimeLimitValue] = React.useState(45);
 
-  const selected = dependents.find((d) => d.id === selectedDepId) || null;
-  const { getWeeklyStats } = useGuardianStore();
-  const weeklyStats = selectedDepId ? getWeeklyStats(selectedDepId) : null;
-  const unreadNotifs = notifications.filter((n) => !n.read);
-  const activeFlags = selected
-    ? selected.wellbeingFlags.filter((f) => !f.acknowledged)
-    : [];
+  // Load linked children and alerts from API
+  React.useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      try {
+        const [childrenRes, alertsRes] = await Promise.all([
+          api.post<any>('/api/trpc/guardian.getLinkedChildren', { json: null }),
+          api.post<any>('/api/trpc/guardian.getAlerts', { json: { unreadOnly: false } }),
+        ]);
+        const childrenData = childrenRes?.result?.data ?? childrenRes ?? [];
+        const alertsData = alertsRes?.result?.data ?? alertsRes ?? [];
+        setChildren(childrenData);
+        setAlerts(alertsData);
+        if (childrenData.length > 0 && !selectedChildId) {
+          setSelectedChildId(childrenData[0].childId);
+        }
+      } catch {
+        // API may not be available yet
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
-  // Generate mock session logs for demo
-  const recentLogs = selected ? selected.sessionLogs.slice(-7).reverse() : [];
+  // Load child activity when selected child changes
+  React.useEffect(() => {
+    if (!selectedChildId) return;
+    async function loadActivity() {
+      try {
+        const res = await api.post<any>('/api/trpc/guardian.getChildActivity', {
+          json: { childId: selectedChildId, days: 7 },
+        });
+        const data = res?.result?.data ?? res;
+        setActivity(data);
+      } catch {
+        // API may not be available yet
+      }
+    }
+    loadActivity();
+  }, [selectedChildId]);
+
+  const selected = children.find((c) => c.childId === selectedChildId) || null;
+  const unreadAlerts = alerts.filter((a) => !a.readAt);
+  const activeAlerts = alerts.filter((a) => !a.readAt && selectedChildId && a.childId === selectedChildId);
+
+  const handleDismissAlert = async (alertId: string) => {
+    try {
+      await api.post('/api/trpc/guardian.dismissAlert', { json: { alertId } });
+      setAlerts((prev) => prev.map((a) => (a.id === alertId ? { ...a, readAt: new Date().toISOString() } : a)));
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleSetDailyLimit = async (childId: string, minutes: number) => {
+    try {
+      await api.post('/api/trpc/guardian.setDailyLimit', { json: { childId, minutes } });
+      setChildren((prev) => prev.map((c) => (c.childId === childId ? { ...c, maxDailyMins: minutes } : c)));
+      setShowTimeLimitEditor(false);
+    } catch {
+      // ignore
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
+        <Loader2 size={32} style={{ color: 'var(--color-electric-blue)', animation: 'spin 1s linear infinite' }} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
@@ -226,7 +324,7 @@ export function GuardianDashboardPage() {
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {unreadNotifs.length > 0 && (
+          {unreadAlerts.length > 0 && (
             <div
               style={{
                 position: 'relative',
@@ -258,7 +356,7 @@ export function GuardianDashboardPage() {
                   justifyContent: 'center',
                 }}
               >
-                {unreadNotifs.length}
+                {unreadAlerts.length}
               </span>
             </div>
           )}
@@ -269,7 +367,7 @@ export function GuardianDashboardPage() {
       </div>
 
       {/* No dependents state */}
-      {dependents.length === 0 && (
+      {children.length === 0 && (
         <Card padding="40px" style={{ textAlign: 'center' }}>
           <Users size={40} style={{ color: 'var(--color-text-muted)', marginBottom: 16 }} />
           <h2 style={{ fontSize: 16, fontWeight: 700, color: '#E8EDF5', marginBottom: 8, fontFamily: 'var(--font-sans)' }}>
@@ -285,15 +383,15 @@ export function GuardianDashboardPage() {
       )}
 
       {/* Dependent selector tabs */}
-      {dependents.length > 0 && (
+      {children.length > 0 && (
         <>
           <div style={{ display: 'flex', gap: 8, marginBottom: 20, overflowX: 'auto' }}>
-            {dependents.map((dep) => {
-              const isActive = selectedDepId === dep.id;
+            {children.map((child) => {
+              const isActive = selectedChildId === child.childId;
               return (
                 <button
-                  key={dep.id}
-                  onClick={() => setSelectedDepId(dep.id)}
+                  key={child.childId}
+                  onClick={() => setSelectedChildId(child.childId)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -311,62 +409,57 @@ export function GuardianDashboardPage() {
                     transition: 'all 150ms ease',
                   }}
                 >
-                  {dep.type === 'child' ? <Baby size={14} /> : <Heart size={14} />}
-                  {dep.name}
+                  {child.accountType === 'CHILD' ? <Baby size={14} /> : <Heart size={14} />}
+                  {child.childName || child.childEmail}
                 </button>
               );
             })}
           </div>
 
-          {selected && (
+          {selected && activity && (
             <>
               {/* Stat cards */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
                 <StatCard
                   icon={<Clock size={18} />}
-                  label="Today"
-                  value={`${selected.todayUsageMinutes}m`}
-                  subValue={`of ${selected.dailyTimeLimitMinutes}m limit`}
-                  color={
-                    selected.todayUsageMinutes >= selected.dailyTimeLimitMinutes
-                      ? 'var(--color-error)'
-                      : 'var(--color-electric-blue)'
-                  }
-                  progress={Math.min(selected.todayUsageMinutes / selected.dailyTimeLimitMinutes, 1)}
+                  label="This Week"
+                  value={`${activity.totalSessionMinutes}m`}
+                  subValue={`${activity.totalSessionCount} sessions`}
+                  color="var(--color-electric-blue)"
                 />
                 <StatCard
                   icon={<BarChart3 size={18} />}
-                  label="This Week"
-                  value={`${weeklyStats?.totalMinutes || 0}m`}
-                  subValue={`${weeklyStats?.sessionCount || 0} sessions`}
-                  color="var(--color-ion-cyan)"
+                  label="Wellbeing"
+                  value={`${activity.wellbeingScore}/100`}
+                  subValue={`Trend: ${activity.wellbeingTrend}`}
+                  color={activity.wellbeingTrend === 'declining' ? 'var(--color-error)' : activity.wellbeingTrend === 'improving' ? 'var(--color-success)' : '#F59E0B'}
                 />
                 <StatCard
                   icon={<TrendingUp size={18} />}
                   label="Avg / Day"
-                  value={`${weeklyStats?.avgPerDay || 0}m`}
+                  value={`${activity.totalSessionCount > 0 ? Math.round(activity.totalSessionMinutes / Math.min(activity.days, 7)) : 0}m`}
                   subValue="last 7 days"
                   color="#FFB740"
                 />
                 <StatCard
                   icon={<CheckCircle2 size={18} />}
                   label="Total Sessions"
-                  value={String(selected.totalSessions)}
-                  subValue={selected.lastSessionAt ? `Last: ${new Date(selected.lastSessionAt).toLocaleDateString()}` : 'No sessions yet'}
+                  value={String(activity.totalSessionCount)}
+                  subValue={activity.sessions[0] ? `Last: ${new Date(activity.sessions[0].startedAt).toLocaleDateString()}` : 'No sessions yet'}
                   color="var(--color-success)"
                 />
               </div>
 
-              {/* Wellbeing flags */}
-              {activeFlags.length > 0 && (
+              {/* Wellbeing alerts */}
+              {activeAlerts.length > 0 && (
                 <div style={{ marginBottom: 20 }}>
                   <SectionHeader title="Wellbeing Alerts" />
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {activeFlags.map((flag) => (
-                      <FlagCard
-                        key={flag.id}
-                        flag={flag}
-                        onAcknowledge={() => acknowledgeFlag(selected.id, flag.id)}
+                    {activeAlerts.map((alert) => (
+                      <AlertCard
+                        key={alert.id}
+                        alert={alert}
+                        onDismiss={() => handleDismissAlert(alert.id)}
                       />
                     ))}
                   </div>
@@ -378,7 +471,7 @@ export function GuardianDashboardPage() {
                 {/* Session history */}
                 <div>
                   <SectionHeader title="Recent Sessions" />
-                  {recentLogs.length === 0 ? (
+                  {activity.sessions.length === 0 ? (
                     <Card padding="20px">
                       <p style={{ fontSize: 13, color: 'var(--color-text-muted)', fontFamily: 'var(--font-sans)' }}>
                         No sessions recorded yet.
@@ -386,35 +479,20 @@ export function GuardianDashboardPage() {
                     </Card>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {recentLogs.map((log) => (
-                        <Card key={log.date} padding="12px 16px">
+                      {activity.sessions.slice(0, 7).map((sess) => (
+                        <Card key={sess.id} padding="12px 16px">
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <div>
                               <div style={{ fontSize: 13, fontWeight: 600, color: '#E8EDF5', fontFamily: 'var(--font-sans)' }}>
-                                {new Date(log.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                                {new Date(sess.startedAt).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
                               </div>
                               <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>
-                                {log.sessionCount} session{log.sessionCount !== 1 ? 's' : ''} - {log.totalMinutes}m total
+                                {Math.ceil((sess.durationSeconds || 0) / 60)}m - {sess.messageCount} messages
                               </div>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              {log.topicsDiscussed.slice(0, 3).map((topic, i) => (
-                                <span
-                                  key={i}
-                                  style={{
-                                    fontSize: 10,
-                                    padding: '2px 8px',
-                                    borderRadius: 100,
-                                    background: 'var(--color-surface-2)',
-                                    color: 'var(--color-text-muted)',
-                                    fontFamily: 'var(--font-sans)',
-                                    fontWeight: 500,
-                                  }}
-                                >
-                                  {topic}
-                                </span>
-                              ))}
-                            </div>
+                            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 100, background: 'var(--color-surface-2)', color: 'var(--color-text-muted)', fontFamily: 'var(--font-sans)' }}>
+                              {sess.environmentSlug}
+                            </span>
                           </div>
                         </Card>
                       ))}
@@ -455,7 +533,7 @@ export function GuardianDashboardPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            setTimeLimitValue(selected.dailyTimeLimitMinutes);
+                            setTimeLimitValue(selected.maxDailyMins);
                             setShowTimeLimitEditor(!showTimeLimitEditor);
                           }}
                           icon={<Settings size={12} />}
@@ -466,7 +544,7 @@ export function GuardianDashboardPage() {
 
                       {!showTimeLimitEditor ? (
                         <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--color-electric-blue)', fontFamily: 'var(--font-sans)' }}>
-                          {selected.dailyTimeLimitMinutes} minutes
+                          {selected.maxDailyMins} minutes
                         </div>
                       ) : (
                         <div>
@@ -474,7 +552,7 @@ export function GuardianDashboardPage() {
                             <input
                               type="range"
                               min={15}
-                              max={selected.type === 'child' ? 45 : 180}
+                              max={selected.accountType === 'CHILD' ? 45 : 180}
                               step={15}
                               value={timeLimitValue}
                               onChange={(e) => setTimeLimitValue(Number(e.target.value))}
@@ -484,7 +562,7 @@ export function GuardianDashboardPage() {
                               {timeLimitValue}m
                             </span>
                           </div>
-                          {selected.type === 'child' && (
+                          {selected.accountType === 'CHILD' && (
                             <p style={{ fontSize: 11, color: '#F59E0B', marginBottom: 8, fontFamily: 'var(--font-sans)' }}>
                               Hard limit: 45 minutes maximum for children. Cannot be overridden.
                             </p>
@@ -492,10 +570,7 @@ export function GuardianDashboardPage() {
                           <Button
                             variant="primary"
                             size="sm"
-                            onClick={() => {
-                              updateTimeLimit(selected.id, timeLimitValue);
-                              setShowTimeLimitEditor(false);
-                            }}
+                            onClick={() => handleSetDailyLimit(selected.childId, timeLimitValue)}
                           >
                             Save
                           </Button>
@@ -503,72 +578,27 @@ export function GuardianDashboardPage() {
                       )}
                     </Card>
 
-                    {/* Notifications control */}
-                    <Card padding="16px">
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          {selected.notificationsEnabled ? (
-                            <Bell size={16} style={{ color: 'var(--color-success)' }} />
-                          ) : (
-                            <BellOff size={16} style={{ color: 'var(--color-text-muted)' }} />
-                          )}
-                          <span style={{ fontSize: 13, fontWeight: 600, color: '#E8EDF5', fontFamily: 'var(--font-sans)' }}>
-                            Pattern Change Alerts
-                          </span>
+                    {/* Hired companions */}
+                    {activity.hires.length > 0 && (
+                      <Card padding="16px">
+                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-ion-cyan)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10, fontFamily: 'var(--font-mono)' }}>
+                          Active Companions
                         </div>
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 600,
-                            padding: '3px 10px',
-                            borderRadius: 100,
-                            background: selected.notificationsEnabled ? 'rgba(34,197,94,0.12)' : 'var(--color-surface-2)',
-                            color: selected.notificationsEnabled ? 'var(--color-success)' : 'var(--color-text-muted)',
-                          }}
-                        >
-                          {selected.notificationsEnabled ? 'On' : 'Off'}
-                        </span>
-                      </div>
-                      <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 8, fontFamily: 'var(--font-sans)' }}>
-                        Get notified when session patterns change significantly, such as unusual usage spikes or long gaps between sessions.
-                      </p>
-                    </Card>
-
-                    {/* Companion info */}
-                    <Card padding="16px">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                        <div
-                          style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: 'var(--radius-sm)',
-                            background: 'rgba(30,111,255,0.12)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: 14,
-                            fontWeight: 800,
-                            color: 'var(--color-electric-blue)',
-                            fontFamily: 'var(--font-sans)',
-                          }}
-                        >
-                          {selected.companionName.charAt(0)}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {activity.hires.map((h) => (
+                            <div key={h.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div style={{ width: 28, height: 28, borderRadius: 'var(--radius-sm)', background: 'rgba(30,111,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: 'var(--color-electric-blue)' }}>
+                                {h.companionName.charAt(0)}
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 13, fontWeight: 600, color: '#E8EDF5', fontFamily: 'var(--font-sans)' }}>{h.companionName}</div>
+                                <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{h.roleName} - {h.streakDays} day streak</div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        <div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#E8EDF5', fontFamily: 'var(--font-sans)' }}>
-                            {selected.companionName}
-                          </div>
-                          <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-                            Assigned companion
-                          </div>
-                        </div>
-                      </div>
-                      <p style={{ fontSize: 12, color: 'var(--color-text-muted)', fontFamily: 'var(--font-sans)' }}>
-                        {selected.type === 'child'
-                          ? 'All sessions encourage human connection and healthy learning habits.'
-                          : 'Sessions focus on companionship, wellbeing check-ins, and cognitive engagement.'}
-                      </p>
-                    </Card>
+                      </Card>
+                    )}
                   </div>
                 </div>
               </div>
@@ -580,9 +610,15 @@ export function GuardianDashboardPage() {
       {showAddModal && (
         <AddDependentModal
           onClose={() => setShowAddModal(false)}
-          onAdd={(p) => {
-            addDependent(p);
-            setSelectedDepId(p.id);
+          onAdd={() => {
+            setShowAddModal(false);
+            // Reload children from API
+            api.post<any>('/api/trpc/guardian.getLinkedChildren', { json: null })
+              .then((res: any) => {
+                const data = res?.result?.data ?? res ?? [];
+                setChildren(data);
+              })
+              .catch(() => {});
           }}
         />
       )}
@@ -645,13 +681,13 @@ function StatCard({
   );
 }
 
-function FlagCard({ flag, onAcknowledge }: { flag: WellbeingFlag; onAcknowledge: () => void }) {
-  const severityColors = {
-    info: { bg: 'rgba(30,111,255,0.08)', border: 'rgba(30,111,255,0.2)', text: 'var(--color-electric-blue)' },
-    warning: { bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.2)', text: '#F59E0B' },
-    critical: { bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)', text: 'var(--color-error)' },
+function AlertCard({ alert, onDismiss }: { alert: GuardianAlertData; onDismiss: () => void }) {
+  const typeColors: Record<string, { bg: string; border: string; text: string }> = {
+    wellbeing_concern: { bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)', text: 'var(--color-error)' },
+    topic_flagged: { bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.2)', text: '#F59E0B' },
+    session_limit_reached: { bg: 'rgba(30,111,255,0.08)', border: 'rgba(30,111,255,0.2)', text: 'var(--color-electric-blue)' },
   };
-  const colors = severityColors[flag.severity];
+  const colors = typeColors[alert.type] || typeColors.topic_flagged;
 
   return (
     <div
@@ -668,13 +704,13 @@ function FlagCard({ flag, onAcknowledge }: { flag: WellbeingFlag; onAcknowledge:
       <AlertTriangle size={18} style={{ color: colors.text, flexShrink: 0 }} />
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, fontFamily: 'var(--font-sans)' }}>
-          {flag.message}
+          {alert.message}
         </div>
         <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>
-          {new Date(flag.timestamp).toLocaleString()}
+          {new Date(alert.createdAt).toLocaleString()}
         </div>
       </div>
-      <Button variant="ghost" size="sm" onClick={onAcknowledge}>
+      <Button variant="ghost" size="sm" onClick={onDismiss}>
         Dismiss
       </Button>
     </div>

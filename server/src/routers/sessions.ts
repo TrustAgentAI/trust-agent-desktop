@@ -1,8 +1,24 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../trpc';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { checkAndAwardMilestones } from './milestones';
+
+// S3 client for document uploads (B.7)
+const s3 = new S3Client({
+  region: process.env.AWS_REGION || 'eu-west-2',
+  credentials: process.env.AWS_ACCESS_KEY_ID
+    ? {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      }
+    : undefined,
+});
+const S3_BUCKET = process.env.S3_CUSTOMER_DOCS_BUCKET || 'trustagent-prod-customer-docs';
 
 export const sessionsRouter = router({
+  // ── B.6 + B.10: Start session with exam mode and anti-dependency enforcement ──
   startSession: protectedProcedure
     .input(
       z.object({
@@ -12,6 +28,8 @@ export const sessionsRouter = router({
         redTeamMode: z.boolean().default(false),
         presenceMode: z.boolean().default(false),
         timeBudgetMins: z.number().int().min(5).max(180).optional(),
+        mode: z.enum(['normal', 'exam', 'upload_mark']).default('normal'),
+        documentId: z.string().optional(), // B.7: document to inject into context
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -24,7 +42,47 @@ export const sessionsRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Active hire not found' });
       }
 
-      // Check daily session limits (for child accounts)
+      // ── B.10: Server-side anti-dependency enforcement ──
+      // Check daily session limits (for child accounts via FamilyLink)
+      const familyLink = await ctx.prisma.familyLink.findFirst({
+        where: { childId: ctx.user.id },
+      });
+
+      if (familyLink) {
+        // Child account - enforce guardian-set daily limit
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todaySessions = await ctx.prisma.agentSession.aggregate({
+          where: {
+            userId: ctx.user.id,
+            startedAt: { gte: today },
+            status: { in: ['ACTIVE', 'COMPLETED'] },
+          },
+          _sum: { durationSeconds: true },
+        });
+        const usedMins = Math.floor((todaySessions._sum.durationSeconds || 0) / 60);
+        const dailyLimit = familyLink.maxDailyMins;
+        if (usedMins >= dailyLimit) {
+          // Log dependency event
+          await ctx.prisma.dependencyEvent.create({
+            data: {
+              sessionId: 'BLOCKED', // No session created
+              userId: ctx.user.id,
+              eventType: 'DAILY_LIMIT_EXCEEDED',
+              elapsedMins: usedMins,
+              details: `Child account daily limit of ${dailyLimit} minutes reached. Used ${usedMins} minutes today.`,
+            },
+          });
+
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: `Daily session limit of ${dailyLimit} minutes reached`,
+            cause: { code: 'DAILY_LIMIT_EXCEEDED', usedMins, dailyLimit },
+          });
+        }
+      }
+
+      // Also check role-level limits
       if (hire.role.maxDailySessionMins) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -41,6 +99,7 @@ export const sessionsRouter = router({
           throw new TRPCError({
             code: 'FORBIDDEN',
             message: `Daily session limit of ${hire.role.maxDailySessionMins} minutes reached`,
+            cause: { code: 'DAILY_LIMIT_EXCEEDED' },
           });
         }
       }
@@ -56,6 +115,9 @@ export const sessionsRouter = router({
         });
       }
 
+      // Resolve exam mode from either boolean or mode string
+      const isExamMode = input.examMode || input.mode === 'exam';
+
       const session = await ctx.prisma.agentSession.create({
         data: {
           userId: ctx.user.id,
@@ -63,10 +125,11 @@ export const sessionsRouter = router({
           status: 'ACTIVE',
           inputMode: input.inputMode,
           environmentSlug: hire.customEnvironment || hire.role.environmentSlug,
-          examMode: input.examMode,
+          examMode: isExamMode,
           redTeamMode: input.redTeamMode,
           presenceMode: input.presenceMode,
           timeBudgetMins: input.timeBudgetMins,
+          documentId: input.documentId || null,
         },
       });
 
@@ -79,11 +142,24 @@ export const sessionsRouter = router({
         companionName: hire.customCompanionName || hire.role.companionName,
         roleName: hire.role.name,
         maxSessionMinutes: hire.role.maxSessionMinutes,
+        examModeActive: isExamMode,
+        isChildAccount: !!familyLink,
+        dailyLimitMins: familyLink?.maxDailyMins ?? null,
       };
     }),
 
+  // ── B.6: End session with optional exam results ──
   endSession: protectedProcedure
-    .input(z.object({ sessionId: z.string() }))
+    .input(
+      z.object({
+        sessionId: z.string(),
+        // B.6: exam results (optional - only present if exam mode)
+        examScore: z.number().int().optional(),
+        examTotal: z.number().int().optional(),
+        examPercentage: z.number().int().optional(),
+        examGrade: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       const session = await ctx.prisma.agentSession.findFirst({
         where: { id: input.sessionId, userId: ctx.user.id, status: 'ACTIVE' },
@@ -95,26 +171,198 @@ export const sessionsRouter = router({
       const endedAt = new Date();
       const durationSeconds = Math.floor((endedAt.getTime() - session.startedAt.getTime()) / 1000);
 
+      // Build update data
+      const updateData: Record<string, unknown> = {
+        status: 'COMPLETED',
+        endedAt,
+        durationSeconds,
+      };
+
+      // B.6: Save exam results if this was an exam session
+      if (session.examMode) {
+        updateData.examScore = input.examScore ?? null;
+        updateData.examTotal = input.examTotal ?? null;
+        updateData.examPercentage = input.examPercentage ?? null;
+        updateData.examGrade = input.examGrade ?? null;
+        updateData.examDurationSecs = durationSeconds;
+      }
+
       // Update session
       const updated = await ctx.prisma.agentSession.update({
         where: { id: session.id },
-        data: {
-          status: 'COMPLETED',
-          endedAt,
-          durationSeconds,
-        },
+        data: updateData,
       });
 
-      // Update hire stats
+      // ── B.4: Compute streak data ──────────────────────────────────────────
       const durationMins = Math.ceil(durationSeconds / 60);
+
+      // Get current hire to read lastSessionAt before update
+      const hire = await ctx.prisma.hire.findUnique({
+        where: { id: session.hireId },
+        select: { streakDays: true, longestStreakDays: true, lastSessionAt: true, sessionCount: true, totalMinutes: true },
+      });
+
+      let newStreakDays = 1;
+      if (hire?.lastSessionAt) {
+        const lastDate = new Date(hire.lastSessionAt);
+        lastDate.setHours(0, 0, 0, 0);
+        const todayDate = new Date(endedAt);
+        todayDate.setHours(0, 0, 0, 0);
+        const diffDays = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays === 0) {
+          // Same day - keep existing streak
+          newStreakDays = hire.streakDays || 1;
+        } else if (diffDays === 1) {
+          // Consecutive day - increment
+          newStreakDays = (hire.streakDays || 0) + 1;
+        } else {
+          // Gap - reset to 1
+          newStreakDays = 1;
+        }
+      }
+
+      const newLongestStreak = Math.max(newStreakDays, hire?.longestStreakDays || 0);
+      const newSessionCount = (hire?.sessionCount || 0) + 1;
+      const newTotalMinutes = (hire?.totalMinutes || 0) + durationMins;
+
+      // Update hire stats with streak data
       await ctx.prisma.hire.update({
         where: { id: session.hireId },
         data: {
-          sessionCount: { increment: 1 },
-          totalMinutes: { increment: durationMins },
+          sessionCount: newSessionCount,
+          totalMinutes: newTotalMinutes,
           lastSessionAt: endedAt,
+          streakDays: newStreakDays,
+          longestStreakDays: newLongestStreak,
         },
       });
+
+      // ── B.5: Compute wellbeing score ──────────────────────────────────────
+      const fourteenDaysAgo = new Date(endedAt);
+      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+      const recentSessions = await ctx.prisma.agentSession.findMany({
+        where: {
+          hireId: session.hireId,
+          status: 'COMPLETED',
+          startedAt: { gte: fourteenDaysAgo },
+        },
+        select: { durationSeconds: true, dependencyFlag: true, startedAt: true },
+      });
+
+      const recentSessionCount = recentSessions.length;
+      const avgSessionMins =
+        recentSessionCount > 0
+          ? recentSessions.reduce((sum, s) => sum + Math.ceil((s.durationSeconds || 0) / 60), 0) / recentSessionCount
+          : 0;
+      const dependencyFlagCount = recentSessions.filter((s) => s.dependencyFlag).length;
+
+      // Calculate days since last session before this one
+      let daysSinceLastSession = 0;
+      if (hire?.lastSessionAt) {
+        daysSinceLastSession = Math.floor(
+          (endedAt.getTime() - new Date(hire.lastSessionAt).getTime()) / (1000 * 60 * 60 * 24),
+        );
+      }
+
+      // Wellbeing formula from B.5
+      let wellbeingScore = 75;
+      if (recentSessionCount >= 3) wellbeingScore += 5;
+      if (newStreakDays >= 3) wellbeingScore += 5;
+      if (avgSessionMins > 10) wellbeingScore += 5;
+      if (recentSessionCount === 0) wellbeingScore -= 15;
+      if (daysSinceLastSession > 7) wellbeingScore -= 10;
+      if (daysSinceLastSession > 14) wellbeingScore -= 10;
+      if (dependencyFlagCount > 3) wellbeingScore -= 10;
+      wellbeingScore = Math.max(0, Math.min(100, wellbeingScore));
+
+      // Get previous wellbeing to determine trend
+      const existingMemory = await ctx.prisma.sessionMemory.findUnique({
+        where: { hireId: session.hireId },
+        select: { wellbeingScore: true, wellbeingTrend: true },
+      });
+
+      const prevScore = existingMemory?.wellbeingScore ?? 75;
+      let wellbeingTrend: string;
+      if (wellbeingScore > prevScore + 5) wellbeingTrend = 'improving';
+      else if (wellbeingScore < prevScore - 5) wellbeingTrend = 'declining';
+      else wellbeingTrend = 'stable';
+
+      // Upsert SessionMemory with wellbeing
+      await ctx.prisma.sessionMemory.upsert({
+        where: { hireId: session.hireId },
+        create: {
+          hireId: session.hireId,
+          memorySummary: {},
+          wellbeingScore,
+          wellbeingTrend,
+          lastWellbeingAt: endedAt,
+          sessionCount: 1,
+          totalMinutes: durationMins,
+        },
+        update: {
+          wellbeingScore,
+          wellbeingTrend,
+          lastWellbeingAt: endedAt,
+          sessionCount: { increment: 1 },
+          totalMinutes: { increment: durationMins },
+        },
+      });
+
+      // Record wellbeing signal
+      await ctx.prisma.wellbeingSignal.create({
+        data: {
+          userId: ctx.user.id,
+          hireId: session.hireId,
+          score: wellbeingScore,
+          trend: wellbeingTrend,
+          signals: {
+            recentSessionCount,
+            avgSessionMins: Math.round(avgSessionMins),
+            streakDays: newStreakDays,
+            dependencyFlagCount,
+            daysSinceLastSession,
+          },
+        },
+      });
+
+      // ── B.5: Create alert if trend declining ──────────────────────────────
+      if (wellbeingTrend === 'declining') {
+        // Find guardian links for this user
+        const guardianLinks = await ctx.prisma.familyLink.findMany({
+          where: { childId: ctx.user.id },
+        });
+
+        for (const link of guardianLinks) {
+          await ctx.prisma.guardianAlert.create({
+            data: {
+              familyLinkId: link.id,
+              type: 'wellbeing_concern',
+              message: `Wellbeing score has declined to ${wellbeingScore}/100 (was ${prevScore}/100). Trend: declining.`,
+              hireId: session.hireId,
+            },
+          });
+
+          // Also create notification for guardian
+          await ctx.prisma.notification.create({
+            data: {
+              userId: link.guardianId,
+              type: 'WELLBEING_SIGNAL',
+              title: 'Wellbeing Alert',
+              body: `Wellbeing score has declined to ${wellbeingScore}/100. This may indicate reduced engagement or session pattern changes.`,
+              data: { hireId: session.hireId, childId: ctx.user.id, score: wellbeingScore, trend: wellbeingTrend },
+              priority: 'high',
+            },
+          });
+        }
+      }
+
+      // ── B.4: Check and award milestones ───────────────────────────────────
+      const awardedMilestones = await checkAndAwardMilestones(
+        ctx.prisma,
+        ctx.user.id,
+        session.hireId,
+        { streakDays: newStreakDays, sessionCount: newSessionCount, totalMinutes: newTotalMinutes },
+      );
 
       // Return metadata only - NO message content
       return {
@@ -123,6 +371,198 @@ export const sessionsRouter = router({
         messageCount: updated.messageCount,
         status: updated.status,
         endedAt: updated.endedAt,
+        // B.4: Streak data
+        streakDays: newStreakDays,
+        longestStreakDays: newLongestStreak,
+        newMilestones: awardedMilestones,
+        // B.5: Wellbeing data
+        wellbeingScore,
+        wellbeingTrend,
+        // B.6: Exam results
+        examScore: updated.examScore,
+        examTotal: updated.examTotal,
+        examPercentage: updated.examPercentage,
+        examGrade: updated.examGrade,
+        examDurationSecs: updated.examDurationSecs,
+      };
+    }),
+
+  // ── B.7: Upload document and get S3 signed URL ──
+  uploadDocument: protectedProcedure
+    .input(
+      z.object({
+        hireId: z.string(),
+        fileName: z.string(),
+        mimeType: z.string(),
+        fileSizeBytes: z.number().int().positive().max(10 * 1024 * 1024), // 10MB max
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      // Verify the hire belongs to this user
+      const hire = await ctx.prisma.hire.findFirst({
+        where: { id: input.hireId, userId: ctx.user.id, status: 'ACTIVE' },
+      });
+      if (!hire) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Active hire not found' });
+      }
+
+      // Generate unique S3 key
+      const timestamp = Date.now();
+      const sanitizedName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const s3Key = `uploads/${ctx.user.id}/${input.hireId}/${timestamp}-${sanitizedName}`;
+
+      // Create presigned URL for direct upload from client
+      const putCommand = new PutObjectCommand({
+        Bucket: S3_BUCKET,
+        Key: s3Key,
+        ContentType: input.mimeType,
+        ContentLength: input.fileSizeBytes,
+        Metadata: {
+          userId: ctx.user.id,
+          hireId: input.hireId,
+        },
+      });
+
+      const presignedUrl = await getSignedUrl(s3, putCommand, { expiresIn: 300 }); // 5 min expiry
+
+      // Create document record in DB
+      const doc = await ctx.prisma.sessionDocument.create({
+        data: {
+          sessionId: '', // Will be linked when session starts with this document
+          s3Key,
+          fileName: input.fileName,
+          mimeType: input.mimeType,
+          fileSizeBytes: input.fileSizeBytes,
+        },
+      });
+
+      // Generate download URL for reading back
+      const getCommand = new GetObjectCommand({
+        Bucket: S3_BUCKET,
+        Key: s3Key,
+      });
+      const documentUrl = await getSignedUrl(s3, getCommand, { expiresIn: 3600 });
+
+      return {
+        documentId: doc.id,
+        presignedUploadUrl: presignedUrl,
+        documentUrl,
+        s3Key,
+        fileName: input.fileName,
+      };
+    }),
+
+  // ── B.7: Confirm document upload and link to session ──
+  linkDocumentToSession: protectedProcedure
+    .input(
+      z.object({
+        documentId: z.string(),
+        sessionId: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      // Verify session belongs to user
+      const session = await ctx.prisma.agentSession.findFirst({
+        where: { id: input.sessionId, userId: ctx.user.id },
+      });
+      if (!session) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Session not found' });
+      }
+
+      // Link document to session
+      const doc = await ctx.prisma.sessionDocument.update({
+        where: { id: input.documentId },
+        data: { sessionId: input.sessionId },
+      });
+
+      // Update session with document reference
+      await ctx.prisma.agentSession.update({
+        where: { id: input.sessionId },
+        data: { documentId: input.documentId },
+      });
+
+      return { documentId: doc.id, sessionId: input.sessionId, linked: true };
+    }),
+
+  // ── B.10: Log dependency event (called from server-side WebSocket handler) ──
+  logDependencyEvent: protectedProcedure
+    .input(
+      z.object({
+        sessionId: z.string(),
+        eventType: z.enum(['WARNING_EMITTED', 'DAILY_LIMIT_EXCEEDED', 'FORCE_END', 'HARD_LIMIT']),
+        elapsedMins: z.number().int(),
+        details: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const event = await ctx.prisma.dependencyEvent.create({
+        data: {
+          sessionId: input.sessionId,
+          userId: ctx.user.id,
+          eventType: input.eventType,
+          elapsedMins: input.elapsedMins,
+          details: input.details,
+        },
+      });
+
+      // If it's a force end, also flag the session
+      if (input.eventType === 'FORCE_END' || input.eventType === 'HARD_LIMIT') {
+        await ctx.prisma.agentSession.update({
+          where: { id: input.sessionId },
+          data: { dependencyFlag: true },
+        });
+      }
+
+      return { eventId: event.id };
+    }),
+
+  // ── B.10: Check dependency status for current session ──
+  checkDependencyStatus: protectedProcedure
+    .input(z.object({ sessionId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const session = await ctx.prisma.agentSession.findFirst({
+        where: { id: input.sessionId, userId: ctx.user.id, status: 'ACTIVE' },
+      });
+      if (!session) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Active session not found' });
+      }
+
+      const elapsedSecs = Math.floor((Date.now() - session.startedAt.getTime()) / 1000);
+      const elapsedMins = Math.floor(elapsedSecs / 60);
+
+      // Check if child account
+      const familyLink = await ctx.prisma.familyLink.findFirst({
+        where: { childId: ctx.user.id },
+      });
+      const isChild = !!familyLink;
+      const dailyLimit = familyLink?.maxDailyMins ?? null;
+
+      // Get today's total usage
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todaySessions = await ctx.prisma.agentSession.aggregate({
+        where: {
+          userId: ctx.user.id,
+          startedAt: { gte: today },
+          status: { in: ['ACTIVE', 'COMPLETED'] },
+        },
+        _sum: { durationSeconds: true },
+      });
+      const totalTodayMins = Math.floor((todaySessions._sum.durationSeconds || 0) / 60);
+
+      // Adult warning at 90 minutes
+      const shouldWarnAdult = !isChild && elapsedMins >= 90;
+      // Child hard limit
+      const shouldEndChild = isChild && dailyLimit && totalTodayMins >= dailyLimit;
+
+      return {
+        elapsedMins,
+        totalTodayMins,
+        isChild,
+        dailyLimit,
+        shouldWarnAdult,
+        shouldEndChild,
+        dependencyFlag: session.dependencyFlag,
       };
     }),
 
@@ -150,6 +590,10 @@ export const sessionsRouter = router({
             inputMode: true,
             environmentSlug: true,
             examMode: true,
+            examScore: true,
+            examTotal: true,
+            examPercentage: true,
+            examGrade: true,
             startedAt: true,
             endedAt: true,
             durationSeconds: true,
@@ -184,6 +628,11 @@ export const sessionsRouter = router({
           inputMode: true,
           environmentSlug: true,
           examMode: true,
+          examScore: true,
+          examTotal: true,
+          examPercentage: true,
+          examGrade: true,
+          examDurationSecs: true,
           redTeamMode: true,
           presenceMode: true,
           startedAt: true,
@@ -193,6 +642,7 @@ export const sessionsRouter = router({
           deviceType: true,
           sessionMinsToday: true,
           dependencyFlag: true,
+          documentId: true,
           // NO message content
         },
       });

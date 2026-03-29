@@ -178,6 +178,61 @@ export const adminRouter = router({
       };
     }),
 
+  // ── PRICING ADMIN ──────────────────────────────────────────────────────
+  getPricingTiers: adminProcedure.query(async ({ ctx }) => {
+    return ctx.prisma.pricingTier.findMany({
+      include: { priceHistory: { take: 5, orderBy: { changedAt: 'desc' } } },
+      orderBy: { priceGBP: 'asc' },
+    });
+  }),
+
+  updatePricingTier: adminProcedure
+    .input(z.object({
+      tierId: z.string(),
+      priceGBP: z.number().positive(),
+      note: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const existing = await ctx.prisma.pricingTier.findUniqueOrThrow({
+        where: { id: input.tierId },
+      });
+
+      // Log price history BEFORE updating
+      await ctx.prisma.priceHistory.create({
+        data: {
+          tierId: input.tierId,
+          oldPrice: existing.priceGBP,
+          newPrice: input.priceGBP,
+          changedBy: ctx.session.userId,
+          note: input.note,
+        },
+      });
+
+      // Update the tier
+      const updated = await ctx.prisma.pricingTier.update({
+        where: { id: input.tierId },
+        data: {
+          pricePreviousGBP: existing.priceGBP,
+          priceGBP: input.priceGBP,
+          changedBy: ctx.session.userId,
+        },
+      });
+
+      // TODO: Update Stripe price (create new price, archive old)
+      // Stripe prices are immutable - must create new price object and archive old
+
+      return updated;
+    }),
+
+  togglePricingTier: adminProcedure
+    .input(z.object({ tierId: z.string(), isActive: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.pricingTier.update({
+        where: { id: input.tierId },
+        data: { isActive: input.isActive },
+      });
+    }),
+
   systemHealth: adminProcedure.query(async ({ ctx }) => {
     const [userCount, roleCount, activeHires, activeSessions] = await Promise.all([
       ctx.prisma.user.count(),

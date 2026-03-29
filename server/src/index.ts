@@ -126,6 +126,48 @@ app.post('/livekit/token', async (req, res) => {
 // B2B Gateway API - REST routes for enterprise customers
 app.use('/v1/gateway', gatewayRouter);
 
+// B.9: ICS calendar file endpoint (public, identified by schedule ID)
+app.get('/schedules/:scheduleId/calendar.ics', async (req, res) => {
+  try {
+    const { scheduleId } = req.params;
+    const schedule = await (await import('./lib/prisma')).prisma.sessionSchedule.findUnique({
+      where: { id: scheduleId },
+      include: { hire: { include: { role: true } } },
+    });
+    if (!schedule) {
+      return res.status(404).json({ error: 'Schedule not found' });
+    }
+
+    const dayMap = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+    const byDay = schedule.dayOfWeek.map((d: number) => dayMap[d]).join(',');
+    const [hours, minutes] = schedule.timeOfDay.split(':').map(Number);
+    const start = new Date();
+    start.setHours(hours, minutes, 0, 0);
+    const end = new Date(start.getTime() + schedule.durationMins * 60 * 1000);
+    const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+
+    const ics = [
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//AgentCore LTD//Trust Agent//EN',
+      'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
+      `UID:schedule-${schedule.id}@trust-agent.ai`,
+      `DTSTART:${fmt(start)}`, `DTEND:${fmt(end)}`,
+      `RRULE:FREQ=WEEKLY;BYDAY=${byDay}`,
+      `SUMMARY:Trust Agent Session - ${schedule.hire.role.name}`,
+      'DESCRIPTION:Your scheduled Trust Agent session.',
+      'BEGIN:VALARM', 'TRIGGER:-PT15M', 'ACTION:DISPLAY',
+      'DESCRIPTION:Session starts in 15 minutes', 'END:VALARM',
+      'END:VEVENT', 'END:VCALENDAR',
+    ].join('\r\n');
+
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="session-schedule.ics"`);
+    res.send(ics);
+  } catch (err) {
+    console.error('ICS generation error:', err);
+    res.status(500).json({ error: 'Failed to generate calendar file' });
+  }
+});
+
 // tRPC middleware
 app.use(
   '/trpc',
@@ -142,8 +184,16 @@ app.use(
 
 const PORT = process.env.PORT || 4000;
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
   console.log(`Trust Agent API running on port ${PORT}`);
+
+  // B.9: Start schedule checker BullMQ job
+  try {
+    const { registerScheduleChecker } = await import('./queues/schedule-checker');
+    await registerScheduleChecker();
+  } catch (err) {
+    console.warn('Schedule checker registration skipped (Redis not available):', (err as Error).message);
+  }
 });
 
 // Graceful shutdown

@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useSpacedRepetitionStore } from '@/store/spacedRepetitionStore';
 import { type Rating, type SpacedRepItem, getNextIntervalPreview } from '@/lib/spaced-repetition';
+import api from '@/lib/api';
 
 interface SpacedRepetitionReviewProps {
   roleId: string;
@@ -45,14 +46,57 @@ export function SpacedRepetitionReview({
 
   const accent = accentColor || 'var(--color-electric-blue)';
 
-  // Load due items on mount and when roleId changes
+  // B.8: Load due items from tRPC (server), fall back to local store
   React.useEffect(() => {
-    const items = getDueItems(roleId);
-    setDueItems(items);
-    setCurrentIndex(0);
-    setReviewedCount(0);
-    setShowAnswer(false);
-    setPhase(items.length > 0 ? 'overview' : 'complete');
+    let cancelled = false;
+
+    async function loadDueItems() {
+      try {
+        // Fetch from server (SM-2 runs server-side)
+        const response = await api.get<{ result: { data: Array<{
+          id: string; concept: string; context: string; topic?: string;
+          easeFactor: number; interval: number; repetitions: number; dueAt: string;
+        }> } }>(`/trpc/spaced-repetition.getDueItems?input=${encodeURIComponent(JSON.stringify({ hireId: roleId }))}`);
+        if (cancelled) return;
+
+        const serverItems: SpacedRepItem[] = (response?.result?.data || []).map((item) => ({
+          id: item.id,
+          roleId: roleId,
+          question: item.concept,
+          answer: item.context,
+          topic: item.topic || '',
+          easinessFactor: item.easeFactor,
+          interval: item.interval,
+          repetitions: item.repetitions,
+          totalReviews: item.repetitions,
+          lapses: 0,
+          nextReview: item.dueAt,
+          createdAt: item.dueAt,
+          lastReviewed: null,
+        }));
+
+        if (serverItems.length > 0) {
+          setDueItems(serverItems);
+          setPhase('overview');
+        } else {
+          // Fall back to local store if server has no items
+          const localItems = getDueItems(roleId);
+          setDueItems(localItems);
+          setPhase(localItems.length > 0 ? 'overview' : 'complete');
+        }
+      } catch {
+        // Server unavailable - fall back to local store
+        const localItems = getDueItems(roleId);
+        setDueItems(localItems);
+        setPhase(localItems.length > 0 ? 'overview' : 'complete');
+      }
+      setCurrentIndex(0);
+      setReviewedCount(0);
+      setShowAnswer(false);
+    }
+
+    loadDueItems();
+    return () => { cancelled = true; };
   }, [roleId, getDueItems]);
 
   const currentItem = dueItems[currentIndex] || null;
@@ -72,10 +116,20 @@ export function SpacedRepetitionReview({
     setPhase('answer');
   };
 
-  const handleRate = (rating: Rating) => {
+  // B.8: Rate item via tRPC (SM-2 runs server-side), fall back to local store
+  const handleRate = async (rating: Rating) => {
     if (!currentItem) return;
 
-    updateItem(currentItem.id, rating);
+    // Try server-side SM-2 first
+    try {
+      await api.post('/trpc/spaced-repetition.reviewItem', {
+        json: { itemId: currentItem.id, quality: rating },
+      });
+    } catch {
+      // Fall back to local store SM-2
+      updateItem(currentItem.id, rating);
+    }
+
     setReviewedCount((prev) => prev + 1);
 
     const nextIndex = currentIndex + 1;

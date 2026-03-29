@@ -57,6 +57,10 @@ model User {
   studyGroupMembers    StudyGroupMember[]
   sharedSessionsInitiated SharedSession[] @relation("sharedSessionsInitiated")
   sharedMessagesSent   SharedMessage[]    @relation("sharedMessagesSent")
+  referralRedemptions  ReferralRedemption[] @relation("referralRedemptions")
+
+  // Push notification subscription (VAPID)
+  vapidSubscription    Json?   // Web Push subscription object
 
   @@index([email])
   @@index([apiKey])
@@ -66,7 +70,7 @@ model User {
 enum UserPlan {
   FREE
   STARTER        // £9.99/mo - 1 role
-  ESSENTIAL      // £19.99/mo - 3 roles
+  ESSENTIAL      // £19.99/mo - 5 roles
   FAMILY         // £24.99/mo - 5 roles + 2 child profiles
   PROFESSIONAL   // £39.99/mo - 10 roles
   ENTERPRISE     // Custom
@@ -496,6 +500,14 @@ model AgentSession {
   durationSeconds  Int?
   messageCount     Int           @default(0)
   deviceType       String?       // desktop | mobile | trustbox | truststick
+  // Exam results (populated on session end if examMode is true)
+  examScore        Int?          // Marks awarded (e.g. 26/40)
+  examTotal        Int?          // Total marks available
+  examPercentage   Int?          // Percentage score
+  examGrade        String?       // A/B/C/D/F
+  examDurationSecs Int?          // Actual exam duration in seconds
+  // Upload & mark
+  documentId       String?       // SessionDocument ID injected into context
   // Anti-dependency tracking
   sessionMinsToday Int           @default(0) // Running total for the day
   dependencyFlag   Boolean       @default(false) // Flagged for high frequency
@@ -503,6 +515,7 @@ model AgentSession {
 
   auditEvents      SessionAuditEvent[]
   uploadedDocs     SessionDocument[]
+  dependencyEvents DependencyEvent[]
 
   @@index([userId])
   @@index([hireId])
@@ -551,6 +564,25 @@ model SessionAuditEvent {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// DEPENDENCY EVENTS (Anti-dependency logging)
+// ════════════════════════════════════════════════════════════════════════════
+
+model DependencyEvent {
+  id          String       @id @default(cuid())
+  sessionId   String
+  session     AgentSession @relation(fields: [sessionId], references: [id])
+  userId      String
+  eventType   String       // WARNING_EMITTED | DAILY_LIMIT_EXCEEDED | FORCE_END | HARD_LIMIT
+  elapsedMins Int
+  details     String?      @db.Text
+  createdAt   DateTime     @default(now())
+
+  @@index([sessionId])
+  @@index([userId])
+  @@index([eventType])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // SESSION MEMORY (Brain summaries - not raw messages)
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -577,12 +609,14 @@ model SpacedRepetitionItem {
   id          String   @id @default(cuid())
   hireId      String
   hire        Hire     @relation(fields: [hireId], references: [id])
-  concept     String
-  context     String   @db.Text
+  concept     String          // question text
+  context     String   @db.Text  // answer text
+  topic       String?          // optional topic grouping
   // SM-2 algorithm fields
   easeFactor  Float    @default(2.5)
   interval    Int      @default(1)     // days
   repetitions Int      @default(0)
+  quality     Int?            // last quality rating 0-5
   dueAt       DateTime @default(now())
   lastReview  DateTime?
   createdAt   DateTime @default(now())
@@ -620,6 +654,7 @@ model ProgressReport {
   hire        Hire     @relation(fields: [hireId], references: [id])
   reportType  String   // weekly | monthly | exam_ready | milestone
   s3Key       String   // PDF stored in private S3 bucket
+  data        Json?    // Structured report data snapshot
   generatedAt DateTime @default(now())
   sharedWith  String[] // Email addresses shared with (guardian, school)
 
@@ -683,6 +718,10 @@ enum NotifType {
   BRAIN_SYNC_FAILED   // Cloud drive sync issue
   AUDIT_COMPLETE      // Creator: audit result ready
   PAYOUT_READY        // Creator: payout available
+  MICRO_MOMENT        // Engagement nudge (haven't studied in 3+ days)
+  GIFT_RECEIVED       // Someone sent you a gift subscription
+  COLLABORATION_INVITE // Invited to a collaboration session
+  REFERRAL_REWARD     // Referral code redeemed, credits awarded
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -729,20 +768,22 @@ model Payment {
 }
 
 model GiftSubscription {
-  id              String   @id @default(cuid())
-  senderId        String
-  sender          User     @relation("sender", fields: [senderId], references: [id])
-  recipientId     String?
-  recipient       User?    @relation("recipient", fields: [recipientId], references: [id])
-  recipientEmail  String
-  plan            UserPlan
-  durationMonths  Int
-  roleId          String?  // Optional: gift a specific role
-  personalMessage String?  @db.Text
-  activationCode  String   @unique @default(cuid())
-  activatedAt     DateTime?
-  expiresAt       DateTime
-  createdAt       DateTime @default(now())
+  id                    String   @id @default(cuid())
+  senderId              String
+  sender                User     @relation("sender", fields: [senderId], references: [id])
+  recipientId           String?
+  recipient             User?    @relation("recipient", fields: [recipientId], references: [id])
+  recipientEmail        String
+  plan                  UserPlan
+  durationMonths        Int
+  roleId                String?  // Optional: gift a specific role
+  personalMessage       String?  @db.Text
+  activationCode        String   @unique // GIFT-XXXX-XXXX format
+  stripePaymentIntentId String?  // Stripe payment intent for purchase
+  activatedAt           DateTime?
+  activatedBy           String?  // userId who activated
+  expiresAt             DateTime
+  createdAt             DateTime @default(now())
 
   @@index([senderId])
   @@index([activationCode])
@@ -753,10 +794,24 @@ model ReferralReward {
   referrerId    String
   referredId    String
   rewardMonths  Int      @default(1)
+  rewardCredits Int      @default(500)
   appliedAt     DateTime?
   createdAt     DateTime @default(now())
 
   @@unique([referrerId, referredId])
+}
+
+model ReferralRedemption {
+  id              String   @id @default(cuid())
+  referrerId      String
+  referredUserId  String
+  referredUser    User     @relation("referralRedemptions", fields: [referredUserId], references: [id])
+  rewardType      String   @default("credits")
+  rewardAmount    Int      @default(500)
+  createdAt       DateTime @default(now())
+
+  @@unique([referrerId, referredUserId])
+  @@index([referrerId])
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -820,6 +875,7 @@ model StudentEnrolment {
   userId      String
   user        User          @relation(fields: [userId], references: [id])
   enrolledAt  DateTime      @default(now())
+  expiresAt   DateTime?     // Derived from licence validity
 
   @@unique([licenceId, userId])
   @@index([licenceId])
@@ -1058,4 +1114,68 @@ model SharedMessage {
 enum SharedSenderType {
   USER
   AI_ROLE
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PRICING ADMIN
+// ════════════════════════════════════════════════════════════════════════════
+
+model PricingTier {
+  id              String   @id @default(cuid())
+  name            String   @unique  // "starter" | "essential" | "family" | "professional"
+  displayName     String
+  priceGBP        Float
+  pricePreviousGBP Float?
+  maxRoles        Int
+  maxChildProfiles Int     @default(0)
+  features        String[] // JSON list of feature keys enabled
+  stripePriceId   String?  // Live Stripe price ID
+  stripeTestPriceId String? // Test Stripe price ID
+  isActive        Boolean  @default(true)
+  changedBy       String?  // Admin user ID who last changed price
+  changedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+  priceHistory    PriceHistory[]
+}
+
+model PriceHistory {
+  id          String      @id @default(cuid())
+  tierId      String
+  tier        PricingTier @relation(fields: [tierId], references: [id])
+  oldPrice    Float
+  newPrice    Float
+  changedBy   String      // Admin user ID
+  changedAt   DateTime    @default(now())
+  note        String?
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ONBOARDING QUIZ
+// ════════════════════════════════════════════════════════════════════════════
+
+model QuizResponse {
+  id                  String   @id @default(cuid())
+  userId              String
+  answers             Json     // Structured quiz answers
+  recommendedRoleSlug String?  // AI-recommended role based on answers
+  completedAt         DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// STREAKS AND MILESTONES
+// ════════════════════════════════════════════════════════════════════════════
+
+model Milestone {
+  id          String   @id @default(cuid())
+  userId      String
+  hireId      String?
+  type        String   // streak_3 | streak_7 | streak_14 | streak_30 | streak_100
+  achievedAt  DateTime @default(now())
+  celebrated  Boolean  @default(false)
+
+  @@index([userId])
+  @@index([hireId])
+  @@index([type])
 }

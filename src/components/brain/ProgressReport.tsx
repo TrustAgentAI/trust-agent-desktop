@@ -2,7 +2,7 @@
  * ProgressReport - UI panel for generating and sharing progress reports.
  * Displays a preview of report data and offers Download PDF / Share actions.
  */
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   Download,
   Share2,
@@ -15,11 +15,12 @@ import {
   Languages,
   Heart,
   Briefcase,
+  Loader2,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { useStreaksStore } from '@/store/streaksStore';
+import { api } from '@/lib/api';
 import type { BrainSummary } from '@/components/brain/BrainViewer';
 import {
   printReport,
@@ -63,13 +64,33 @@ export function ProgressReport({
 }: ProgressReportProps) {
   const accent = accentColor || 'var(--color-electric-blue)';
   const [copied, setCopied] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [reports, setReports] = useState<{ id: string; reportUrl: string; reportType: string; generatedAt: string }[]>([]);
+  const [hireData, setHireData] = useState<{ totalSessions: number; totalMinutes: number; streakDays: number; longestStreakDays: number } | null>(null);
+  const [milestonesList, setMilestonesList] = useState<{ id: string; type: string; label: string; achievedAt: string }[]>([]);
 
-  const streaks = useStreaksStore();
-  const totalSessions = streaks.getTotalSessionsForRole(roleId);
-  const totalMinutes = streaks.getTotalMinutesForRole(roleId);
-  const roleMilestones = streaks.milestonesReached.filter(
-    (m) => !m.roleId || m.roleId === roleId,
-  );
+  // Fetch real data from API on mount
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [reportsRes, milestonesRes] = await Promise.all([
+          api.post<any>('/api/trpc/reports.listReports', { json: { hireId: roleId, limit: 5 } }),
+          api.post<any>('/api/trpc/milestones.getMilestones', { json: { hireId: roleId } }),
+        ]);
+        const rData = reportsRes?.result?.data ?? reportsRes ?? [];
+        const mData = milestonesRes?.result?.data ?? milestonesRes ?? [];
+        setReports(rData);
+        setMilestonesList(mData);
+      } catch {
+        // API not available
+      }
+    }
+    loadData();
+  }, [roleId]);
+
+  const totalSessions = hireData?.totalSessions ?? brain.totalSessions ?? 0;
+  const totalMinutes = hireData?.totalMinutes ?? brain.totalMinutes ?? 0;
+  const roleMilestones = milestonesList;
 
   const dateRange = useMemo(() => {
     const now = new Date();
@@ -118,8 +139,22 @@ export function ProgressReport({
     ],
   );
 
-  const handleDownload = () => {
-    printReport(reportData);
+  const handleDownload = async () => {
+    setGenerating(true);
+    try {
+      const result = await api.post<any>('/api/trpc/reports.generateProgressReport', {
+        json: { hireId: roleId, reportType: 'weekly' },
+      });
+      const data = result?.result?.data ?? result;
+      if (data?.reportUrl) {
+        window.open(data.reportUrl, '_blank');
+      }
+    } catch {
+      // Fallback to local print
+      printReport(reportData);
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const handleShare = async () => {
@@ -190,10 +225,11 @@ export function ProgressReport({
           <Button
             variant="primary"
             size="sm"
-            icon={<Download size={12} />}
+            icon={generating ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Download size={12} />}
             onClick={handleDownload}
+            disabled={generating}
           >
-            Download PDF
+            {generating ? 'Generating...' : 'Download PDF'}
           </Button>
         </div>
       </div>
@@ -267,13 +303,13 @@ export function ProgressReport({
         <StatCard
           icon={<Flame size={14} />}
           label="Streak"
-          value={`${streaks.currentStreak} days`}
+          value={`${hireData?.streakDays ?? brain.streakDays ?? 0} days`}
           accent="#F59E0B"
         />
         <StatCard
           icon={<Trophy size={14} />}
           label="Milestones"
-          value={roleMilestones.length.toString()}
+          value={milestonesList.length.toString()}
           accent="var(--color-ion-cyan)"
         />
       </div>
