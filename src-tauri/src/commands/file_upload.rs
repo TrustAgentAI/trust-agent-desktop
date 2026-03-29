@@ -138,7 +138,10 @@ pub async fn select_file(app: tauri::AppHandle) -> Result<FileSelection, String>
 
     let file_response = file_path.ok_or_else(|| "No file selected".to_string())?;
 
-    let path_str = file_response.path.to_string_lossy().to_string();
+    let path_buf = file_response
+        .into_path()
+        .map_err(|e| format!("Invalid file path: {}", e))?;
+    let path_str = path_buf.to_string_lossy().to_string();
     validate_path(&path_str)?;
 
     let metadata = std::fs::metadata(&path_str)
@@ -272,25 +275,35 @@ pub async fn upload_file(
         .await
         .map_err(|e| format!("S3 upload failed: {}", e))?;
 
+    // Determine outcome without holding any lock (the .text().await requires Send)
+    let success = upload_resp.status().is_success();
+    let err_text = if !success {
+        Some(
+            upload_resp
+                .text()
+                .await
+                .unwrap_or_else(|_| "unknown error".to_string()),
+        )
+    } else {
+        None
+    };
+
+    // Now acquire the lock (no more awaits after this point)
     let mut uploads = state
         .uploads
         .lock()
         .map_err(|e| format!("Lock error: {}", e))?;
 
-    if upload_resp.status().is_success() {
+    if success {
         if let Some(u) = uploads.get_mut(&upload_id) {
             u.state = UploadState::Completed;
             u.bytes_uploaded = file_bytes.len() as u64;
             u.url = Some(signed.file_url);
         }
-    } else {
-        let err_text = upload_resp
-            .text()
-            .await
-            .unwrap_or_else(|_| "unknown error".to_string());
+    } else if let Some(err) = err_text {
         if let Some(u) = uploads.get_mut(&upload_id) {
             u.state = UploadState::Failed;
-            u.error = Some(err_text);
+            u.error = Some(err);
         }
     }
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Users, Copy, Check, Play, LogOut, RefreshCw,
-  Clock, MessageSquare, User as UserIcon, BookOpen,
+  Clock, MessageSquare, BookOpen,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 

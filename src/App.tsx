@@ -7,6 +7,9 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { PermissionManager } from '@/components/permissions/PermissionManager';
 import { AuditLog } from '@/components/audit/AuditLog';
 import { MarketplacePanel } from '@/components/marketplace/MarketplacePanel';
+import { StudyGroupList } from '@/components/study/StudyGroupList';
+import { StudyGroupDetail } from '@/components/study/StudyGroupDetail';
+import { SharedSessionView } from '@/components/study/SharedSessionView';
 
 const LoginPageLazy = React.lazy(() =>
   import('@/pages/LoginPage').then((m) => ({ default: m.LoginPage })),
@@ -86,6 +89,26 @@ function App() {
                 <MarketplacePanel />
               </Shell>
             }
+          />
+          <Route
+            path="/study"
+            element={
+              <Shell>
+                <StudyGroupList />
+              </Shell>
+            }
+          />
+          <Route
+            path="/study/:groupId"
+            element={
+              <Shell>
+                <StudyGroupDetail />
+              </Shell>
+            }
+          />
+          <Route
+            path="/study/:groupId/session/:sessionId"
+            element={<SharedSessionView />}
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

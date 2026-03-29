@@ -20,13 +20,13 @@ export function CreateGroupModal({ open, onClose, onCreated }: CreateGroupModalP
   const [error, setError] = React.useState<string | null>(null);
 
   // Filter to only hired (active) roles
-  const hiredRoles = roles.filter((r) => r.hireId);
+  const hiredRoles = roles.filter((r) => r.hireId && r.isActive);
 
   React.useEffect(() => {
     if (open) {
       setName('');
       setDescription('');
-      setSelectedRoleId(hiredRoles[0]?.roleId || '');
+      setSelectedRoleId(hiredRoles[0]?.hireId || '');
       setMaxMembers(5);
       setCategory('');
       setError(null);
@@ -46,7 +46,7 @@ export function CreateGroupModal({ open, onClose, onCreated }: CreateGroupModalP
       const group = await api.post<{ id: string; name: string }>('/trpc/studyGroups.createGroup', {
         name: name.trim(),
         description: description.trim() || undefined,
-        roleId: selectedRoleId,
+        hireId: selectedRoleId,
         maxMembers,
         category: category.trim() || undefined,
       });
@@ -133,8 +133,8 @@ export function CreateGroupModal({ open, onClose, onCreated }: CreateGroupModalP
             >
               <option value="">Select a role...</option>
               {hiredRoles.map((r) => (
-                <option key={r.roleId} value={r.roleId}>
-                  {r.name} ({r.companionName})
+                <option key={r.hireId} value={r.hireId}>
+                  {r.roleName} ({r.roleCategory})
                 </option>
               ))}
             </select>

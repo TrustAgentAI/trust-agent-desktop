@@ -22,37 +22,113 @@ pub struct AudioStatus {
 
 /// Managed state for ambient audio playback.
 ///
-/// Actual audio streaming is handled by the rodio crate.  We store a handle
-/// to the current sink so that we can pause / stop / adjust volume.
+/// rodio types (OutputStream, Sink, etc.) are **not** Send/Sync and therefore
+/// cannot live inside Tauri managed state directly.  Instead we keep only the
+/// logical status here and spawn a dedicated audio thread when playback is
+/// requested.  Communication with that thread happens through a command channel.
 pub struct AmbientAudioState {
-    inner: Mutex<AmbientAudioInner>,
+    status: Mutex<AudioStatus>,
+    /// A sender to command the audio thread.
+    /// `None` means no audio thread is running.
+    cmd_tx: Mutex<Option<std::sync::mpsc::Sender<AudioCommand>>>,
 }
 
-struct AmbientAudioInner {
-    status: AudioStatus,
-    /// rodio OutputStream must be kept alive for the duration of playback.
-    _stream: Option<rodio::OutputStream>,
-    /// Handle to the output stream, needed for creating sinks.
-    stream_handle: Option<rodio::OutputStreamHandle>,
-    /// The active sink (controls playback).
-    sink: Option<rodio::Sink>,
+/// Commands sent to the dedicated audio thread.
+enum AudioCommand {
+    Play { bytes: Vec<u8>, volume: f32 },
+    Stop,
+    SetVolume(f32),
 }
 
 impl Default for AmbientAudioState {
     fn default() -> Self {
         Self {
-            inner: Mutex::new(AmbientAudioInner {
-                status: AudioStatus {
-                    state: AudioState::Stopped,
-                    volume: 1.0,
-                    url: None,
-                },
-                _stream: None,
-                stream_handle: None,
-                sink: None,
+            status: Mutex::new(AudioStatus {
+                state: AudioState::Stopped,
+                volume: 1.0,
+                url: None,
             }),
+            cmd_tx: Mutex::new(None),
         }
     }
+}
+
+/// Spawn a dedicated audio thread that owns all rodio resources.
+/// Returns a sender that can be used to control playback.
+fn spawn_audio_thread() -> std::sync::mpsc::Sender<AudioCommand> {
+    let (tx, rx) = std::sync::mpsc::channel::<AudioCommand>();
+
+    std::thread::spawn(move || {
+        // These rodio types are NOT Send - they live entirely on this thread.
+        let mut stream: Option<rodio::OutputStream> = None;
+        let mut stream_handle: Option<rodio::OutputStreamHandle> = None;
+        let mut sink: Option<rodio::Sink> = None;
+
+        while let Ok(cmd) = rx.recv() {
+            match cmd {
+                AudioCommand::Play { bytes, volume } => {
+                    // Stop any existing playback
+                    if let Some(ref s) = sink {
+                        s.stop();
+                    }
+                    sink = None;
+
+                    // Create a new output stream if needed
+                    if stream.is_none() {
+                        match rodio::OutputStream::try_default() {
+                            Ok((s, h)) => {
+                                stream = Some(s);
+                                stream_handle = Some(h);
+                            }
+                            Err(e) => {
+                                eprintln!("Failed to open audio output: {}", e);
+                                continue;
+                            }
+                        }
+                    }
+
+                    let handle = match stream_handle.as_ref() {
+                        Some(h) => h,
+                        None => continue,
+                    };
+
+                    let new_sink = match rodio::Sink::try_new(handle) {
+                        Ok(s) => s,
+                        Err(e) => {
+                            eprintln!("Failed to create audio sink: {}", e);
+                            continue;
+                        }
+                    };
+
+                    let cursor = std::io::Cursor::new(bytes);
+                    match rodio::Decoder::new(cursor) {
+                        Ok(source) => {
+                            new_sink
+                                .append(rodio::source::Source::repeat_infinite(source));
+                            new_sink.set_volume(volume);
+                            sink = Some(new_sink);
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to decode audio: {}", e);
+                        }
+                    }
+                }
+                AudioCommand::Stop => {
+                    if let Some(ref s) = sink {
+                        s.stop();
+                    }
+                    sink = None;
+                }
+                AudioCommand::SetVolume(v) => {
+                    if let Some(ref s) = sink {
+                        s.set_volume(v);
+                    }
+                }
+            }
+        }
+    });
+
+    tx
 }
 
 // ---------------------------------------------------------------------------
@@ -69,7 +145,7 @@ pub async fn play_ambient(
     url: String,
     state: State<'_, AmbientAudioState>,
 ) -> Result<AudioStatus, String> {
-    // Fetch audio bytes from the URL
+    // Fetch audio bytes from the URL (no locks held across await)
     let bytes = reqwest::get(&url)
         .await
         .map_err(|e| format!("Failed to fetch audio from URL: {}", e))?
@@ -77,65 +153,67 @@ pub async fn play_ambient(
         .await
         .map_err(|e| format!("Failed to read audio bytes: {}", e))?;
 
-    let cursor = std::io::Cursor::new(bytes.to_vec());
+    let audio_bytes = bytes.to_vec();
 
-    let mut inner = state
-        .inner
+    // Now acquire locks only for sync operations (no await after this)
+    let volume = {
+        let status = state
+            .status
+            .lock()
+            .map_err(|e| format!("Lock error: {}", e))?;
+        status.volume
+    };
+
+    // Ensure we have an audio thread running
+    {
+        let mut cmd_tx = state
+            .cmd_tx
+            .lock()
+            .map_err(|e| format!("Lock error: {}", e))?;
+        if cmd_tx.is_none() {
+            *cmd_tx = Some(spawn_audio_thread());
+        }
+        if let Some(ref tx) = *cmd_tx {
+            tx.send(AudioCommand::Play {
+                bytes: audio_bytes,
+                volume,
+            })
+            .map_err(|e| format!("Failed to send play command: {}", e))?;
+        }
+    }
+
+    // Update status
+    let mut status = state
+        .status
         .lock()
         .map_err(|e| format!("Lock error: {}", e))?;
+    status.state = AudioState::Playing;
+    status.url = Some(url);
 
-    // Stop any existing playback
-    if let Some(ref sink) = inner.sink {
-        sink.stop();
-    }
-
-    // Create a new output stream if we don't have one
-    if inner._stream.is_none() {
-        let (stream, handle) = rodio::OutputStream::try_default()
-            .map_err(|e| format!("Failed to open audio output: {}", e))?;
-        inner._stream = Some(stream);
-        inner.stream_handle = Some(handle);
-    }
-
-    let handle = inner
-        .stream_handle
-        .as_ref()
-        .ok_or_else(|| "No audio output handle available".to_string())?;
-
-    let sink =
-        rodio::Sink::try_new(handle).map_err(|e| format!("Failed to create audio sink: {}", e))?;
-
-    // Decode and append the audio source
-    let source = rodio::Decoder::new(cursor)
-        .map_err(|e| format!("Failed to decode audio: {}", e))?;
-
-    // Loop the ambient track by using repeat_infinite
-    sink.append(rodio::source::Source::repeat_infinite(source));
-    sink.set_volume(inner.status.volume);
-
-    inner.sink = Some(sink);
-    inner.status.state = AudioState::Playing;
-    inner.status.url = Some(url);
-
-    Ok(inner.status.clone())
+    Ok(status.clone())
 }
 
 /// Stop ambient audio playback.
 #[tauri::command]
 pub fn stop_ambient(state: State<'_, AmbientAudioState>) -> Result<AudioStatus, String> {
-    let mut inner = state
-        .inner
+    {
+        let cmd_tx = state
+            .cmd_tx
+            .lock()
+            .map_err(|e| format!("Lock error: {}", e))?;
+        if let Some(ref tx) = *cmd_tx {
+            let _ = tx.send(AudioCommand::Stop);
+        }
+    }
+
+    let mut status = state
+        .status
         .lock()
         .map_err(|e| format!("Lock error: {}", e))?;
+    status.state = AudioState::Stopped;
+    status.url = None;
 
-    if let Some(ref sink) = inner.sink {
-        sink.stop();
-    }
-    inner.sink = None;
-    inner.status.state = AudioState::Stopped;
-    inner.status.url = None;
-
-    Ok(inner.status.clone())
+    Ok(status.clone())
 }
 
 /// Set the ambient audio volume (0.0 to 1.0).
@@ -148,27 +226,32 @@ pub fn set_volume(
         return Err("Volume must be between 0.0 and 1.0".to_string());
     }
 
-    let mut inner = state
-        .inner
-        .lock()
-        .map_err(|e| format!("Lock error: {}", e))?;
-
-    inner.status.volume = level;
-
-    if let Some(ref sink) = inner.sink {
-        sink.set_volume(level);
+    {
+        let cmd_tx = state
+            .cmd_tx
+            .lock()
+            .map_err(|e| format!("Lock error: {}", e))?;
+        if let Some(ref tx) = *cmd_tx {
+            let _ = tx.send(AudioCommand::SetVolume(level));
+        }
     }
 
-    Ok(inner.status.clone())
+    let mut status = state
+        .status
+        .lock()
+        .map_err(|e| format!("Lock error: {}", e))?;
+    status.volume = level;
+
+    Ok(status.clone())
 }
 
 /// Get the current audio playback status.
 #[tauri::command]
 pub fn get_audio_status(state: State<'_, AmbientAudioState>) -> Result<AudioStatus, String> {
-    let inner = state
-        .inner
+    let status = state
+        .status
         .lock()
         .map_err(|e| format!("Lock error: {}", e))?;
 
-    Ok(inner.status.clone())
+    Ok(status.clone())
 }

@@ -19,15 +19,20 @@ export const studyGroupsRouter = router({
       z.object({
         name: z.string().min(1).max(100),
         description: z.string().max(500).optional(),
-        roleId: z.string(),
+        roleId: z.string().optional(),
+        hireId: z.string().optional(),
         maxMembers: z.number().int().min(2).max(10).default(5),
         category: z.string().max(100).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Verify user has an active hire for this role
+      // Verify user has an active hire - accept either roleId or hireId
       const hire = await ctx.prisma.hire.findFirst({
-        where: { userId: ctx.user.id, roleId: input.roleId, status: 'ACTIVE' },
+        where: {
+          userId: ctx.user.id,
+          status: 'ACTIVE',
+          ...(input.hireId ? { id: input.hireId } : { roleId: input.roleId }),
+        },
         include: { role: true },
       });
       if (!hire) {
@@ -52,7 +57,7 @@ export const studyGroupsRouter = router({
           name: input.name,
           description: input.description,
           createdByUserId: ctx.user.id,
-          roleId: input.roleId,
+          roleId: hire.roleId,
           maxMembers: input.maxMembers,
           inviteCode,
           category: input.category,
