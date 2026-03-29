@@ -8,6 +8,7 @@ import {
   Plus,
   LogOut,
   User,
+  Users,
 } from 'lucide-react';
 import { TitleBar } from '@/components/layout/TitleBar';
 import { ConnectionStatus } from '@/components/layout/ConnectionStatus';
@@ -16,10 +17,11 @@ import { useAgentStore } from '@/store/agentStore';
 import { useAuthStore } from '@/store/authStore';
 import type { HiredRole } from '@/store/agentStore';
 
-type NavKey = 'dashboard' | 'permissions' | 'audit' | 'settings';
+type NavKey = 'dashboard' | 'permissions' | 'audit' | 'guardian' | 'settings';
 
 const navItems: { key: NavKey; label: string; path: string; icon: React.ReactNode }[] = [
   { key: 'dashboard', label: 'Dashboard', path: '/', icon: <LayoutDashboard size={16} /> },
+  { key: 'guardian', label: 'Guardian', path: '/guardian', icon: <Users size={16} /> },
   { key: 'permissions', label: 'Permissions', path: '/permissions', icon: <Shield size={16} /> },
   { key: 'audit', label: 'Audit Log', path: '/audit', icon: <ScrollText size={16} /> },
   { key: 'settings', label: 'Settings', path: '/settings', icon: <Settings size={16} /> },

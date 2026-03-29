@@ -11,6 +11,8 @@ import { MarketplacePanel } from '@/components/marketplace/MarketplacePanel';
 import { StudyGroupList } from '@/components/study/StudyGroupList';
 import { StudyGroupDetail } from '@/components/study/StudyGroupDetail';
 import { SharedSessionView } from '@/components/study/SharedSessionView';
+import { GuardianDashboardPage } from '@/pages/GuardianDashboardPage';
+import { OnboardingQuiz, type QuizAnswers } from '@/components/onboarding/OnboardingQuiz';
 
 // Wire gateway to use JWT from auth store
 configureGateway({
@@ -57,10 +59,42 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function OnboardingGate({ children }: { children: React.ReactNode }) {
+  const [showQuiz, setShowQuiz] = React.useState(() => {
+    try {
+      return localStorage.getItem('ta_onboarding_completed') !== 'true';
+    } catch {
+      return true;
+    }
+  });
+
+  const handleQuizComplete = (answers: QuizAnswers) => {
+    setShowQuiz(false);
+    // Navigate to marketplace to hire the recommended role
+    window.location.hash = `/marketplace?recommended=${answers.recommendedRoleId}`;
+  };
+
+  const handleSkip = () => {
+    try {
+      localStorage.setItem('ta_onboarding_completed', 'true');
+    } catch {
+      // Storage might be blocked
+    }
+    setShowQuiz(false);
+  };
+
+  if (showQuiz) {
+    return <OnboardingQuiz onComplete={handleQuizComplete} onSkip={handleSkip} />;
+  }
+
+  return <>{children}</>;
+}
+
 function App() {
   return (
     <BrowserRouter>
       <AuthGate>
+        <OnboardingGate>
         <Routes>
           <Route
             path="/"
@@ -122,8 +156,17 @@ function App() {
             path="/study/:groupId/session/:sessionId"
             element={<SharedSessionView />}
           />
+          <Route
+            path="/guardian"
+            element={
+              <Shell>
+                <GuardianDashboardPage />
+              </Shell>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </OnboardingGate>
       </AuthGate>
     </BrowserRouter>
   );
