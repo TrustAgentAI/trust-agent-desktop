@@ -8,6 +8,7 @@ import { localStore } from '@/lib/tauri-compat';
 interface HiredRole {
   hireId: string;
   roleName: string;
+  roleSlug?: string;
   roleCategory: string;
   trustScore: number;
   trustBadge: 'PLATINUM' | 'GOLD' | 'SILVER' | 'BASIC';

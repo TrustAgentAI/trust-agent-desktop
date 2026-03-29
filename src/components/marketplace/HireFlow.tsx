@@ -12,6 +12,7 @@ interface HireFlowProps {
   companionName: string;
   priceMonthly: number; // pence
   accentColor?: string;
+  avatarUrl?: string;
   userPlan?: string;
   userHireCount?: number;
   planLimit?: number;
@@ -42,6 +43,7 @@ export function HireFlow({
   onUpgradePlan,
   onConnectDrive,
   onClose,
+  avatarUrl,
 }: HireFlowProps) {
   const accent = accentColor || 'var(--color-electric-blue)';
   const needsUpgrade = userPlan === 'FREE' && priceMonthly > 0;
@@ -110,23 +112,36 @@ export function HireFlow({
             gap: 12,
           }}
         >
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 'var(--radius-md)',
-              background: `${accent}20`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 14,
-              fontWeight: 800,
-              color: accent,
-              fontFamily: 'var(--font-sans)',
-            }}
-          >
-            {companionName.charAt(0)}
-          </div>
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={companionName}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 'var(--radius-md)',
+                objectFit: 'cover',
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 'var(--radius-md)',
+                background: `${accent}20`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 14,
+                fontWeight: 800,
+                color: accent,
+                fontFamily: 'var(--font-sans)',
+              }}
+            >
+              {companionName.charAt(0)}
+            </div>
+          )}
           <div>
             <div
               style={{

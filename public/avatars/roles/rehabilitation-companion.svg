@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg-rehabilitation-companion" x1="0%" y1="0%" x2="100%" y2="100%" gradientTransform="rotate(166 128 128)">
+      <stop offset="0%" stop-color="#00AA78"/>
+      <stop offset="100%" stop-color="#008860"/>
+    </linearGradient>
+    <linearGradient id="shine-rehabilitation-companion" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.12"/>
+      <stop offset="50%" stop-color="white" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="black" stop-opacity="0.08"/>
+    </linearGradient>
+    <clipPath id="circle-rehabilitation-companion">
+      <circle cx="128" cy="128" r="128"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="128" fill="url(#bg-rehabilitation-companion)"/>
+
+  <!-- Subtle pattern ring -->
+  <circle cx="128" cy="128" r="120" fill="none" stroke="white" stroke-opacity="0.06" stroke-width="1"/>
+  <circle cx="128" cy="128" r="110" fill="none" stroke="white" stroke-opacity="0.03" stroke-width="0.5"/>
+
+  <!-- Icon silhouette -->
+  <g clip-path="url(#circle-rehabilitation-companion)" color="white">
+    
+    <path d="M128 165 Q80 130 80 105 Q80 80 105 80 Q120 80 128 95 Q136 80 151 80 Q176 80 176 105 Q176 130 128 165Z" fill="currentColor" opacity="0.9"/>
+  
+  </g>
+
+  <!-- Gradient shine overlay -->
+  <circle cx="128" cy="128" r="128" fill="url(#shine-rehabilitation-companion)"/>
+
+  <!-- Subtle border -->
+  <circle cx="128" cy="128" r="126" fill="none" stroke="white" stroke-opacity="0.1" stroke-width="1.5"/>
+</svg>

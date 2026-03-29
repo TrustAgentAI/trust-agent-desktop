@@ -311,24 +311,38 @@ function RoleCard({ role, onClick }: { role: RoleListItem; onClick: () => void }
       <div style={{ padding: '14px 16px' }}>
         {/* Avatar and badges */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 'var(--radius-md)',
-              background: `${accent}20`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 16,
-              fontWeight: 800,
-              color: accent,
-              fontFamily: 'var(--font-sans)',
-              flexShrink: 0,
-            }}
-          >
-            {role.name.charAt(0)}
-          </div>
+          {role.avatarUrl ? (
+            <img
+              src={role.avatarUrl}
+              alt={role.name}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 'var(--radius-md)',
+                flexShrink: 0,
+                objectFit: 'cover',
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 'var(--radius-md)',
+                background: `${accent}20`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 16,
+                fontWeight: 800,
+                color: accent,
+                fontFamily: 'var(--font-sans)',
+                flexShrink: 0,
+              }}
+            >
+              {role.name.charAt(0)}
+            </div>
+          )}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{

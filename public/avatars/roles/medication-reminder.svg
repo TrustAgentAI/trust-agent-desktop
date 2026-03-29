@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg-medication-reminder" x1="0%" y1="0%" x2="100%" y2="100%" gradientTransform="rotate(162 128 128)">
+      <stop offset="0%" stop-color="#D4A843"/>
+      <stop offset="100%" stop-color="#C09838"/>
+    </linearGradient>
+    <linearGradient id="shine-medication-reminder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.12"/>
+      <stop offset="50%" stop-color="white" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="black" stop-opacity="0.08"/>
+    </linearGradient>
+    <clipPath id="circle-medication-reminder">
+      <circle cx="128" cy="128" r="128"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="128" fill="url(#bg-medication-reminder)"/>
+
+  <!-- Subtle pattern ring -->
+  <circle cx="128" cy="128" r="120" fill="none" stroke="white" stroke-opacity="0.06" stroke-width="1"/>
+  <circle cx="128" cy="128" r="110" fill="none" stroke="white" stroke-opacity="0.03" stroke-width="0.5"/>
+
+  <!-- Icon silhouette -->
+  <g clip-path="url(#circle-medication-reminder)" color="white">
+    
+    <rect x="100" y="85" width="56" height="86" rx="28" fill="currentColor" opacity="0.9" transform="rotate(-30 128 128)"/>
+    <line x1="100" y1="128" x2="156" y2="128" stroke="white" opacity="0.15" stroke-width="2" transform="rotate(-30 128 128)"/>
+  
+  </g>
+
+  <!-- Gradient shine overlay -->
+  <circle cx="128" cy="128" r="128" fill="url(#shine-medication-reminder)"/>
+
+  <!-- Subtle border -->
+  <circle cx="128" cy="128" r="126" fill="none" stroke="white" stroke-opacity="0.1" stroke-width="1.5"/>
+</svg>

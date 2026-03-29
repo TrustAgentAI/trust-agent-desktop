@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg-a-level-psychology-tutor" x1="0%" y1="0%" x2="100%" y2="100%" gradientTransform="rotate(177 128 128)">
+      <stop offset="0%" stop-color="#1E6FFF"/>
+      <stop offset="100%" stop-color="#1452B8"/>
+    </linearGradient>
+    <linearGradient id="shine-a-level-psychology-tutor" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.12"/>
+      <stop offset="50%" stop-color="white" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="black" stop-opacity="0.08"/>
+    </linearGradient>
+    <clipPath id="circle-a-level-psychology-tutor">
+      <circle cx="128" cy="128" r="128"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="128" fill="url(#bg-a-level-psychology-tutor)"/>
+
+  <!-- Subtle pattern ring -->
+  <circle cx="128" cy="128" r="120" fill="none" stroke="white" stroke-opacity="0.06" stroke-width="1"/>
+  <circle cx="128" cy="128" r="110" fill="none" stroke="white" stroke-opacity="0.03" stroke-width="0.5"/>
+
+  <!-- Icon silhouette -->
+  <g clip-path="url(#circle-a-level-psychology-tutor)" color="white">
+    
+    <path d="M128 80 Q100 80 95 100 Q85 100 82 115 Q80 130 88 140 Q85 152 92 162 Q100 175 115 175 L128 175" fill="currentColor" opacity="0.85"/>
+    <path d="M128 80 Q156 80 161 100 Q171 100 174 115 Q176 130 168 140 Q171 152 164 162 Q156 175 141 175 L128 175" fill="currentColor" opacity="0.75"/>
+    <line x1="128" y1="85" x2="128" y2="172" stroke="white" opacity="0.15" stroke-width="2"/>
+  
+  </g>
+
+  <!-- Gradient shine overlay -->
+  <circle cx="128" cy="128" r="128" fill="url(#shine-a-level-psychology-tutor)"/>
+
+  <!-- Subtle border -->
+  <circle cx="128" cy="128" r="126" fill="none" stroke="white" stroke-opacity="0.1" stroke-width="1.5"/>
+</svg>

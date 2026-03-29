@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg-university-personal-statement-coach" x1="0%" y1="0%" x2="100%" y2="100%" gradientTransform="rotate(146 128 128)">
+      <stop offset="0%" stop-color="#1E6FFF"/>
+      <stop offset="100%" stop-color="#1452B8"/>
+    </linearGradient>
+    <linearGradient id="shine-university-personal-statement-coach" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.12"/>
+      <stop offset="50%" stop-color="white" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="black" stop-opacity="0.08"/>
+    </linearGradient>
+    <clipPath id="circle-university-personal-statement-coach">
+      <circle cx="128" cy="128" r="128"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="128" fill="url(#bg-university-personal-statement-coach)"/>
+
+  <!-- Subtle pattern ring -->
+  <circle cx="128" cy="128" r="120" fill="none" stroke="white" stroke-opacity="0.06" stroke-width="1"/>
+  <circle cx="128" cy="128" r="110" fill="none" stroke="white" stroke-opacity="0.03" stroke-width="0.5"/>
+
+  <!-- Icon silhouette -->
+  <g clip-path="url(#circle-university-personal-statement-coach)" color="white">
+    
+    <path d="M160 72 Q175 72 178 85 L118 165 L105 175 L108 160 L160 90 Q160 85 155 82 Z" fill="currentColor" opacity="0.9"/>
+    <line x1="145" y1="95" x2="125" y2="155" stroke="white" opacity="0.15" stroke-width="2"/>
+    <path d="M105 175 L95 180 L100 170 Z" fill="currentColor" opacity="0.7"/>
+  
+  </g>
+
+  <!-- Gradient shine overlay -->
+  <circle cx="128" cy="128" r="128" fill="url(#shine-university-personal-statement-coach)"/>
+
+  <!-- Subtle border -->
+  <circle cx="128" cy="128" r="126" fill="none" stroke="white" stroke-opacity="0.1" stroke-width="1.5"/>
+</svg>

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg-interactive-quiz-companion" x1="0%" y1="0%" x2="100%" y2="100%" gradientTransform="rotate(183 128 128)">
+      <stop offset="0%" stop-color="#7B61FF"/>
+      <stop offset="100%" stop-color="#6850E0"/>
+    </linearGradient>
+    <linearGradient id="shine-interactive-quiz-companion" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.12"/>
+      <stop offset="50%" stop-color="white" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="black" stop-opacity="0.08"/>
+    </linearGradient>
+    <clipPath id="circle-interactive-quiz-companion">
+      <circle cx="128" cy="128" r="128"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="128" fill="url(#bg-interactive-quiz-companion)"/>
+
+  <!-- Subtle pattern ring -->
+  <circle cx="128" cy="128" r="120" fill="none" stroke="white" stroke-opacity="0.06" stroke-width="1"/>
+  <circle cx="128" cy="128" r="110" fill="none" stroke="white" stroke-opacity="0.03" stroke-width="0.5"/>
+
+  <!-- Icon silhouette -->
+  <g clip-path="url(#circle-interactive-quiz-companion)" color="white">
+    
+    <path d="M80 115 Q80 95 100 95 L156 95 Q176 95 176 115 L176 140 Q176 165 156 165 L145 165 L135 180 L120 180 L110 165 L100 165 Q80 165 80 140 Z" fill="currentColor" opacity="0.9"/>
+    <line x1="105" y1="120" x2="105" y2="140" stroke="white" opacity="0.2" stroke-width="3"/>
+    <line x1="95" y1="130" x2="115" y2="130" stroke="white" opacity="0.2" stroke-width="3"/>
+    <circle cx="148" cy="122" r="5" fill="white" opacity="0.2"/>
+    <circle cx="158" cy="132" r="5" fill="white" opacity="0.2"/>
+  
+  </g>
+
+  <!-- Gradient shine overlay -->
+  <circle cx="128" cy="128" r="128" fill="url(#shine-interactive-quiz-companion)"/>
+
+  <!-- Subtle border -->
+  <circle cx="128" cy="128" r="126" fill="none" stroke="white" stroke-opacity="0.1" stroke-width="1.5"/>
+</svg>

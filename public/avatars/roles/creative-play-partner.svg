@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg-creative-play-partner" x1="0%" y1="0%" x2="100%" y2="100%" gradientTransform="rotate(173 128 128)">
+      <stop offset="0%" stop-color="#FF8C42"/>
+      <stop offset="100%" stop-color="#E07530"/>
+    </linearGradient>
+    <linearGradient id="shine-creative-play-partner" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.12"/>
+      <stop offset="50%" stop-color="white" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="black" stop-opacity="0.08"/>
+    </linearGradient>
+    <clipPath id="circle-creative-play-partner">
+      <circle cx="128" cy="128" r="128"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="128" fill="url(#bg-creative-play-partner)"/>
+
+  <!-- Subtle pattern ring -->
+  <circle cx="128" cy="128" r="120" fill="none" stroke="white" stroke-opacity="0.06" stroke-width="1"/>
+  <circle cx="128" cy="128" r="110" fill="none" stroke="white" stroke-opacity="0.03" stroke-width="0.5"/>
+
+  <!-- Icon silhouette -->
+  <g clip-path="url(#circle-creative-play-partner)" color="white">
+    
+    <path d="M128 75 Q75 75 75 128 Q75 180 128 180 Q145 180 145 165 Q145 155 155 155 L165 155 Q180 155 180 140 Q180 75 128 75Z" fill="currentColor" opacity="0.85"/>
+    <circle cx="105" cy="110" r="8" fill="white" opacity="0.25"/>
+    <circle cx="130" cy="100" r="7" fill="white" opacity="0.2"/>
+    <circle cx="155" cy="115" r="6" fill="white" opacity="0.18"/>
+    <circle cx="100" cy="145" r="7" fill="white" opacity="0.22"/>
+  
+  </g>
+
+  <!-- Gradient shine overlay -->
+  <circle cx="128" cy="128" r="128" fill="url(#shine-creative-play-partner)"/>
+
+  <!-- Subtle border -->
+  <circle cx="128" cy="128" r="126" fill="none" stroke="white" stroke-opacity="0.1" stroke-width="1.5"/>
+</svg>

@@ -8,6 +8,7 @@ import { useAgentStore } from '@/store/agentStore';
 import { shouldUseMockAgent, getMockResponse } from '@/lib/mockAgent';
 import { wsClient } from '@/lib/ws';
 import api from '@/lib/api';
+import { getRoleAvatarUrl } from '@/lib/roleAvatar';
 import {
   evaluateSession,
   shouldForceEndSession,
@@ -64,6 +65,7 @@ export function SessionView({
   const examTimerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
   const activeRole = roles.find((r) => r.hireId === activeRoleId);
+  const roleAvatarUrl = activeRole?.roleSlug ? getRoleAvatarUrl(activeRole.roleSlug) : undefined;
   const messages: ChatMessageData[] = activeRoleId
     ? getMessages(activeRoleId).map((m) => ({
         id: m.id,
@@ -647,23 +649,36 @@ export function SessionView({
                 gap: 12,
               }}
             >
-              <div
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 12,
-                  background: `${accent}20`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 18,
-                  fontWeight: 800,
-                  color: accent,
-                  fontFamily: 'var(--font-sans)',
-                }}
-              >
-                {activeRole.roleName.charAt(0)}
-              </div>
+              {roleAvatarUrl ? (
+                <img
+                  src={roleAvatarUrl}
+                  alt={activeRole.roleName}
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 12,
+                    objectFit: 'cover',
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 12,
+                    background: `${accent}20`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 18,
+                    fontWeight: 800,
+                    color: accent,
+                    fontFamily: 'var(--font-sans)',
+                  }}
+                >
+                  {activeRole.roleName.charAt(0)}
+                </div>
+              )}
               <div style={{ fontSize: 15, fontWeight: 600, color: '#E8EDF5', fontFamily: 'var(--font-sans)' }}>
                 {activeRole.roleName}
               </div>
@@ -679,6 +694,7 @@ export function SessionView({
               message={msg}
               agentName={activeRole.roleName}
               accentColor={accent}
+              avatarUrl={roleAvatarUrl}
             />
           ))}
 
@@ -687,6 +703,7 @@ export function SessionView({
               message={{ id: 'typing', role: 'agent', content: '', timestamp: Date.now() }}
               agentName={activeRole.roleName}
               accentColor={accent}
+              avatarUrl={roleAvatarUrl}
               isTyping
             />
           )}

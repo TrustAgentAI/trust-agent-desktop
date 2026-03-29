@@ -16,6 +16,7 @@ import { AgentCard } from '@/components/agent/AgentCard';
 import { useAgentStore } from '@/store/agentStore';
 import { useAuthStore } from '@/store/authStore';
 import type { HiredRole } from '@/store/agentStore';
+import { getRoleAvatarUrl } from '@/lib/roleAvatar';
 
 type NavKey = 'dashboard' | 'permissions' | 'audit' | 'guardian' | 'settings';
 
@@ -425,6 +426,19 @@ function SidebarRoleCard({
         transition: 'all 150ms ease',
       }}
     >
+      {role.roleSlug && (
+        <img
+          src={getRoleAvatarUrl(role.roleSlug)}
+          alt={role.roleName}
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: 'var(--radius-sm)',
+            flexShrink: 0,
+            objectFit: 'cover',
+          }}
+        />
+      )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{

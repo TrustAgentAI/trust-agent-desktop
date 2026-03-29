@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg-uk-employment-rights-advisor" x1="0%" y1="0%" x2="100%" y2="100%" gradientTransform="rotate(184 128 128)">
+      <stop offset="0%" stop-color="#1A3A6B"/>
+      <stop offset="100%" stop-color="#1A3060"/>
+    </linearGradient>
+    <linearGradient id="shine-uk-employment-rights-advisor" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.12"/>
+      <stop offset="50%" stop-color="white" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="black" stop-opacity="0.08"/>
+    </linearGradient>
+    <clipPath id="circle-uk-employment-rights-advisor">
+      <circle cx="128" cy="128" r="128"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="128" fill="url(#bg-uk-employment-rights-advisor)"/>
+
+  <!-- Subtle pattern ring -->
+  <circle cx="128" cy="128" r="120" fill="none" stroke="white" stroke-opacity="0.06" stroke-width="1"/>
+  <circle cx="128" cy="128" r="110" fill="none" stroke="white" stroke-opacity="0.03" stroke-width="0.5"/>
+
+  <!-- Icon silhouette -->
+  <g clip-path="url(#circle-uk-employment-rights-advisor)" color="white">
+    
+    <line x1="128" y1="75" x2="128" y2="178" stroke="currentColor" opacity="0.85" stroke-width="4"/>
+    <line x1="80" y1="105" x2="176" y2="105" stroke="currentColor" opacity="0.85" stroke-width="4" stroke-linecap="round"/>
+    <path d="M70 140 L80 105 L90 140 Q80 155 70 140Z" fill="currentColor" opacity="0.7"/>
+    <path d="M166 130 L176 105 L186 130 Q176 145 166 130Z" fill="currentColor" opacity="0.7"/>
+    <line x1="108" y1="178" x2="148" y2="178" stroke="currentColor" opacity="0.7" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="128" cy="78" r="6" fill="currentColor" opacity="0.8"/>
+  
+  </g>
+
+  <!-- Gradient shine overlay -->
+  <circle cx="128" cy="128" r="128" fill="url(#shine-uk-employment-rights-advisor)"/>
+
+  <!-- Subtle border -->
+  <circle cx="128" cy="128" r="126" fill="none" stroke="white" stroke-opacity="0.1" stroke-width="1.5"/>
+</svg>

@@ -13,10 +13,11 @@ interface ChatMessageProps {
   message: ChatMessageData;
   agentName: string;
   accentColor?: string;
+  avatarUrl?: string;
   isTyping?: boolean;
 }
 
-export function ChatMessage({ message, agentName, accentColor, isTyping }: ChatMessageProps) {
+export function ChatMessage({ message, agentName, accentColor, avatarUrl, isTyping }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const [showTime, setShowTime] = React.useState(false);
   const time = new Date(message.timestamp).toLocaleTimeString([], {
@@ -37,7 +38,7 @@ export function ChatMessage({ message, agentName, accentColor, isTyping }: ChatM
           animation: 'fadeIn 200ms ease',
         }}
       >
-        <AgentAvatar name={agentName} accentColor={accent} />
+        <AgentAvatar name={agentName} accentColor={accent} avatarUrl={avatarUrl} />
         <div
           style={{
             background: 'var(--color-navy-2)',
@@ -68,7 +69,7 @@ export function ChatMessage({ message, agentName, accentColor, isTyping }: ChatM
         animation: 'fadeIn 200ms ease',
       }}
     >
-      {!isUser && <AgentAvatar name={agentName} accentColor={accent} />}
+      {!isUser && <AgentAvatar name={agentName} accentColor={accent} avatarUrl={avatarUrl} />}
 
       <div style={{ maxWidth: '72%', minWidth: 0 }}>
         <div
@@ -105,7 +106,22 @@ export function ChatMessage({ message, agentName, accentColor, isTyping }: ChatM
   );
 }
 
-function AgentAvatar({ name, accentColor }: { name: string; accentColor: string }) {
+function AgentAvatar({ name, accentColor, avatarUrl }: { name: string; accentColor: string; avatarUrl?: string }) {
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name}
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 'var(--radius-sm)',
+          flexShrink: 0,
+          objectFit: 'cover',
+        }}
+      />
+    );
+  }
   return (
     <div
       style={{

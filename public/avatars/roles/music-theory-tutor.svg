@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg-music-theory-tutor" x1="0%" y1="0%" x2="100%" y2="100%" gradientTransform="rotate(146 128 128)">
+      <stop offset="0%" stop-color="#CC3399"/>
+      <stop offset="100%" stop-color="#B02880"/>
+    </linearGradient>
+    <linearGradient id="shine-music-theory-tutor" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.12"/>
+      <stop offset="50%" stop-color="white" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="black" stop-opacity="0.08"/>
+    </linearGradient>
+    <clipPath id="circle-music-theory-tutor">
+      <circle cx="128" cy="128" r="128"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="128" fill="url(#bg-music-theory-tutor)"/>
+
+  <!-- Subtle pattern ring -->
+  <circle cx="128" cy="128" r="120" fill="none" stroke="white" stroke-opacity="0.06" stroke-width="1"/>
+  <circle cx="128" cy="128" r="110" fill="none" stroke="white" stroke-opacity="0.03" stroke-width="0.5"/>
+
+  <!-- Icon silhouette -->
+  <g clip-path="url(#circle-music-theory-tutor)" color="white">
+    
+    <ellipse cx="108" cy="160" rx="15" ry="12" fill="currentColor" opacity="0.9" transform="rotate(-20 108 160)"/>
+    <ellipse cx="158" cy="145" rx="15" ry="12" fill="currentColor" opacity="0.9" transform="rotate(-20 158 145)"/>
+    <line x1="122" y1="155" x2="122" y2="82" stroke="currentColor" opacity="0.85" stroke-width="4"/>
+    <line x1="172" y1="140" x2="172" y2="72" stroke="currentColor" opacity="0.85" stroke-width="4"/>
+    <path d="M122 82 Q147 70 172 72" fill="none" stroke="currentColor" opacity="0.8" stroke-width="6"/>
+  
+  </g>
+
+  <!-- Gradient shine overlay -->
+  <circle cx="128" cy="128" r="128" fill="url(#shine-music-theory-tutor)"/>
+
+  <!-- Subtle border -->
+  <circle cx="128" cy="128" r="126" fill="none" stroke="white" stroke-opacity="0.1" stroke-width="1.5"/>
+</svg>

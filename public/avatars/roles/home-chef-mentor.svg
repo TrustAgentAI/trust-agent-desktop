@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg-home-chef-mentor" x1="0%" y1="0%" x2="100%" y2="100%" gradientTransform="rotate(152 128 128)">
+      <stop offset="0%" stop-color="#CC4444"/>
+      <stop offset="100%" stop-color="#B83838"/>
+    </linearGradient>
+    <linearGradient id="shine-home-chef-mentor" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.12"/>
+      <stop offset="50%" stop-color="white" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="black" stop-opacity="0.08"/>
+    </linearGradient>
+    <clipPath id="circle-home-chef-mentor">
+      <circle cx="128" cy="128" r="128"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="128" fill="url(#bg-home-chef-mentor)"/>
+
+  <!-- Subtle pattern ring -->
+  <circle cx="128" cy="128" r="120" fill="none" stroke="white" stroke-opacity="0.06" stroke-width="1"/>
+  <circle cx="128" cy="128" r="110" fill="none" stroke="white" stroke-opacity="0.03" stroke-width="0.5"/>
+
+  <!-- Icon silhouette -->
+  <g clip-path="url(#circle-home-chef-mentor)" color="white">
+    
+    <path d="M95 130 Q80 130 80 110 Q80 85 100 80 Q105 70 128 70 Q151 70 156 80 Q176 85 176 110 Q176 130 161 130Z" fill="currentColor" opacity="0.9"/>
+    <rect x="95" y="130" width="66" height="38" rx="4" fill="currentColor" opacity="0.8"/>
+    <line x1="105" y1="138" x2="105" y2="160" stroke="white" opacity="0.15" stroke-width="2"/>
+    <line x1="120" y1="138" x2="120" y2="160" stroke="white" opacity="0.15" stroke-width="2"/>
+    <line x1="135" y1="138" x2="135" y2="160" stroke="white" opacity="0.15" stroke-width="2"/>
+    <line x1="150" y1="138" x2="150" y2="160" stroke="white" opacity="0.15" stroke-width="2"/>
+  
+  </g>
+
+  <!-- Gradient shine overlay -->
+  <circle cx="128" cy="128" r="128" fill="url(#shine-home-chef-mentor)"/>
+
+  <!-- Subtle border -->
+  <circle cx="128" cy="128" r="126" fill="none" stroke="white" stroke-opacity="0.1" stroke-width="1.5"/>
+</svg>

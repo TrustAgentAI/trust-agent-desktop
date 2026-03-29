@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg-paramedic-science-companion" x1="0%" y1="0%" x2="100%" y2="100%" gradientTransform="rotate(148 128 128)">
+      <stop offset="0%" stop-color="#1E6FFF"/>
+      <stop offset="100%" stop-color="#1452B8"/>
+    </linearGradient>
+    <linearGradient id="shine-paramedic-science-companion" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.12"/>
+      <stop offset="50%" stop-color="white" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="black" stop-opacity="0.08"/>
+    </linearGradient>
+    <clipPath id="circle-paramedic-science-companion">
+      <circle cx="128" cy="128" r="128"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="128" fill="url(#bg-paramedic-science-companion)"/>
+
+  <!-- Subtle pattern ring -->
+  <circle cx="128" cy="128" r="120" fill="none" stroke="white" stroke-opacity="0.06" stroke-width="1"/>
+  <circle cx="128" cy="128" r="110" fill="none" stroke="white" stroke-opacity="0.03" stroke-width="0.5"/>
+
+  <!-- Icon silhouette -->
+  <g clip-path="url(#circle-paramedic-science-companion)" color="white">
+    
+    <path d="M100 85 L100 130 Q100 160 128 160 Q156 160 156 130 L156 85" fill="none" stroke="currentColor" opacity="0.85" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="100" cy="82" r="8" fill="currentColor" opacity="0.9"/>
+    <circle cx="156" cy="82" r="8" fill="currentColor" opacity="0.9"/>
+    <circle cx="156" cy="165" r="12" fill="currentColor" opacity="0.7"/>
+    <circle cx="156" cy="165" r="6" fill="currentColor" opacity="0.3"/>
+  
+  </g>
+
+  <!-- Gradient shine overlay -->
+  <circle cx="128" cy="128" r="128" fill="url(#shine-paramedic-science-companion)"/>
+
+  <!-- Subtle border -->
+  <circle cx="128" cy="128" r="126" fill="none" stroke="white" stroke-opacity="0.1" stroke-width="1.5"/>
+</svg>

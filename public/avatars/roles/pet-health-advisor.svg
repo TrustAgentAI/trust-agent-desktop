@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg-pet-health-advisor" x1="0%" y1="0%" x2="100%" y2="100%" gradientTransform="rotate(139 128 128)">
+      <stop offset="0%" stop-color="#00AA78"/>
+      <stop offset="100%" stop-color="#008860"/>
+    </linearGradient>
+    <linearGradient id="shine-pet-health-advisor" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.12"/>
+      <stop offset="50%" stop-color="white" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="black" stop-opacity="0.08"/>
+    </linearGradient>
+    <clipPath id="circle-pet-health-advisor">
+      <circle cx="128" cy="128" r="128"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="128" fill="url(#bg-pet-health-advisor)"/>
+
+  <!-- Subtle pattern ring -->
+  <circle cx="128" cy="128" r="120" fill="none" stroke="white" stroke-opacity="0.06" stroke-width="1"/>
+  <circle cx="128" cy="128" r="110" fill="none" stroke="white" stroke-opacity="0.03" stroke-width="0.5"/>
+
+  <!-- Icon silhouette -->
+  <g clip-path="url(#circle-pet-health-advisor)" color="white">
+    
+    <ellipse cx="128" cy="148" rx="28" ry="22" fill="currentColor" opacity="0.9"/>
+    <circle cx="105" cy="115" r="12" fill="currentColor" opacity="0.85"/>
+    <circle cx="151" cy="115" r="12" fill="currentColor" opacity="0.85"/>
+    <circle cx="88" cy="135" r="10" fill="currentColor" opacity="0.8"/>
+    <circle cx="168" cy="135" r="10" fill="currentColor" opacity="0.8"/>
+  
+  </g>
+
+  <!-- Gradient shine overlay -->
+  <circle cx="128" cy="128" r="128" fill="url(#shine-pet-health-advisor)"/>
+
+  <!-- Subtle border -->
+  <circle cx="128" cy="128" r="126" fill="none" stroke="white" stroke-opacity="0.1" stroke-width="1.5"/>
+</svg>

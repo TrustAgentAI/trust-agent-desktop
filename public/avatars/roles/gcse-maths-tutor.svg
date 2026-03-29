@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg-gcse-maths-tutor" x1="0%" y1="0%" x2="100%" y2="100%" gradientTransform="rotate(133 128 128)">
+      <stop offset="0%" stop-color="#1E6FFF"/>
+      <stop offset="100%" stop-color="#1452B8"/>
+    </linearGradient>
+    <linearGradient id="shine-gcse-maths-tutor" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.12"/>
+      <stop offset="50%" stop-color="white" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="black" stop-opacity="0.08"/>
+    </linearGradient>
+    <clipPath id="circle-gcse-maths-tutor">
+      <circle cx="128" cy="128" r="128"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="128" fill="url(#bg-gcse-maths-tutor)"/>
+
+  <!-- Subtle pattern ring -->
+  <circle cx="128" cy="128" r="120" fill="none" stroke="white" stroke-opacity="0.06" stroke-width="1"/>
+  <circle cx="128" cy="128" r="110" fill="none" stroke="white" stroke-opacity="0.03" stroke-width="0.5"/>
+
+  <!-- Icon silhouette -->
+  <g clip-path="url(#circle-gcse-maths-tutor)" color="white">
+    
+    <path d="M128 75 L65 105 L128 135 L191 105 Z" fill="currentColor" opacity="0.9"/>
+    <path d="M90 115 L90 155 Q128 175 166 155 L166 115" fill="none" stroke="currentColor" opacity="0.8" stroke-width="4"/>
+    <line x1="185" y1="105" x2="185" y2="160" stroke="currentColor" opacity="0.7" stroke-width="3"/>
+    <circle cx="185" cy="163" r="4" fill="currentColor" opacity="0.7"/>
+  
+  </g>
+
+  <!-- Gradient shine overlay -->
+  <circle cx="128" cy="128" r="128" fill="url(#shine-gcse-maths-tutor)"/>
+
+  <!-- Subtle border -->
+  <circle cx="128" cy="128" r="126" fill="none" stroke="white" stroke-opacity="0.1" stroke-width="1.5"/>
+</svg>

@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg-daily-companion" x1="0%" y1="0%" x2="100%" y2="100%" gradientTransform="rotate(170 128 128)">
+      <stop offset="0%" stop-color="#D4A843"/>
+      <stop offset="100%" stop-color="#C09838"/>
+    </linearGradient>
+    <linearGradient id="shine-daily-companion" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.12"/>
+      <stop offset="50%" stop-color="white" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="black" stop-opacity="0.08"/>
+    </linearGradient>
+    <clipPath id="circle-daily-companion">
+      <circle cx="128" cy="128" r="128"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="128" fill="url(#bg-daily-companion)"/>
+
+  <!-- Subtle pattern ring -->
+  <circle cx="128" cy="128" r="120" fill="none" stroke="white" stroke-opacity="0.06" stroke-width="1"/>
+  <circle cx="128" cy="128" r="110" fill="none" stroke="white" stroke-opacity="0.03" stroke-width="0.5"/>
+
+  <!-- Icon silhouette -->
+  <g clip-path="url(#circle-daily-companion)" color="white">
+    
+    <circle cx="128" cy="128" r="30" fill="currentColor" opacity="0.9"/>
+    <line x1="170.0" y1="128.0" x2="184.0" y2="128.0" stroke="currentColor" opacity="0.7" stroke-width="4" stroke-linecap="round"/>
+    <line x1="157.7" y1="157.7" x2="167.6" y2="167.6" stroke="currentColor" opacity="0.7" stroke-width="4" stroke-linecap="round"/>
+    <line x1="128.0" y1="170.0" x2="128.0" y2="184.0" stroke="currentColor" opacity="0.7" stroke-width="4" stroke-linecap="round"/>
+    <line x1="98.3" y1="157.7" x2="88.4" y2="167.6" stroke="currentColor" opacity="0.7" stroke-width="4" stroke-linecap="round"/>
+    <line x1="86.0" y1="128.0" x2="72.0" y2="128.0" stroke="currentColor" opacity="0.7" stroke-width="4" stroke-linecap="round"/>
+    <line x1="98.3" y1="98.3" x2="88.4" y2="88.4" stroke="currentColor" opacity="0.7" stroke-width="4" stroke-linecap="round"/>
+    <line x1="128.0" y1="86.0" x2="128.0" y2="72.0" stroke="currentColor" opacity="0.7" stroke-width="4" stroke-linecap="round"/>
+    <line x1="157.7" y1="98.3" x2="167.6" y2="88.4" stroke="currentColor" opacity="0.7" stroke-width="4" stroke-linecap="round"/>
+  
+  </g>
+
+  <!-- Gradient shine overlay -->
+  <circle cx="128" cy="128" r="128" fill="url(#shine-daily-companion)"/>
+
+  <!-- Subtle border -->
+  <circle cx="128" cy="128" r="126" fill="none" stroke="white" stroke-opacity="0.1" stroke-width="1.5"/>
+</svg>

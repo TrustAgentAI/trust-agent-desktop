@@ -92,24 +92,38 @@ export function RoleDetail({ role, onHire, onBack, isHired }: RoleDetailProps) {
 
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
           {/* Avatar */}
-          <div
-            style={{
-              width: 64,
-              height: 64,
-              borderRadius: 'var(--radius-lg)',
-              background: `${accent}20`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 24,
-              fontWeight: 800,
-              color: accent,
-              fontFamily: 'var(--font-sans)',
-              flexShrink: 0,
-            }}
-          >
-            {role.companionName.charAt(0)}
-          </div>
+          {role.avatarUrl ? (
+            <img
+              src={role.avatarUrl}
+              alt={role.name}
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 'var(--radius-lg)',
+                flexShrink: 0,
+                objectFit: 'cover',
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 'var(--radius-lg)',
+                background: `${accent}20`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 24,
+                fontWeight: 800,
+                color: accent,
+                fontFamily: 'var(--font-sans)',
+                flexShrink: 0,
+              }}
+            >
+              {role.companionName.charAt(0)}
+            </div>
+          )}
 
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
