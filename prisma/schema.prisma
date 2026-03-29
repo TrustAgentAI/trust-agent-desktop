@@ -53,6 +53,10 @@ model User {
   progressReports   ProgressReport[]
   schedules         SessionSchedule[]
   wellbeingSignals  WellbeingSignal[]
+  studyGroupsCreated   StudyGroup[]       @relation("studyGroupsCreated")
+  studyGroupMembers    StudyGroupMember[]
+  sharedSessionsInitiated SharedSession[] @relation("sharedSessionsInitiated")
+  sharedMessagesSent   SharedMessage[]    @relation("sharedMessagesSent")
 
   @@index([email])
   @@index([apiKey])
@@ -324,6 +328,7 @@ model Role {
   hires     Hire[]
   skills    RoleSkill[]
   creator   CreatorProfile? @relation(fields: [creatorId], references: [id])
+  studyGroups StudyGroup[]
 
   @@index([baseSlug])
   @@index([category])
@@ -960,4 +965,97 @@ model AuditJob {
 
   @@index([roleId])
   @@index([status])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// STUDY GROUPS - Shared learning with AI tutor roles
+// ════════════════════════════════════════════════════════════════════════════
+
+model StudyGroup {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?  @db.Text
+  createdByUserId String
+  createdBy       User     @relation("studyGroupsCreated", fields: [createdByUserId], references: [id])
+  roleId          String
+  role            Role     @relation(fields: [roleId], references: [id])
+  maxMembers      Int      @default(5)
+  isActive        Boolean  @default(true)
+  inviteCode      String   @unique
+  category        String?  // e.g. "gcse-maths", "a-level-physics"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  members         StudyGroupMember[]
+  sharedSessions  SharedSession[]
+
+  @@index([createdByUserId])
+  @@index([roleId])
+  @@index([inviteCode])
+  @@index([isActive])
+}
+
+model StudyGroupMember {
+  id        String              @id @default(cuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id])
+  groupId   String
+  group     StudyGroup          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  role      StudyGroupMemberRole @default(MEMBER)
+  isActive  Boolean             @default(true)
+  joinedAt  DateTime            @default(now())
+
+  @@unique([userId, groupId])
+  @@index([userId])
+  @@index([groupId])
+}
+
+enum StudyGroupMemberRole {
+  OWNER
+  MEMBER
+}
+
+model SharedSession {
+  id                String              @id @default(cuid())
+  groupId           String
+  group             StudyGroup          @relation(fields: [groupId], references: [id])
+  initiatedByUserId String
+  initiatedBy       User                @relation("sharedSessionsInitiated", fields: [initiatedByUserId], references: [id])
+  status            SharedSessionStatus @default(ACTIVE)
+  messageCount      Int                 @default(0)
+  duration          Int?                // seconds
+  startedAt         DateTime            @default(now())
+  endedAt           DateTime?
+
+  messages          SharedMessage[]
+
+  @@index([groupId])
+  @@index([initiatedByUserId])
+  @@index([status])
+}
+
+enum SharedSessionStatus {
+  ACTIVE
+  ENDED
+}
+
+model SharedMessage {
+  id            String           @id @default(cuid())
+  sessionId     String
+  session       SharedSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  senderUserId  String?          // null for AI role responses
+  sender        User?            @relation("sharedMessagesSent", fields: [senderUserId], references: [id])
+  senderType    SharedSenderType
+  content       String           @db.Text
+  isVisible     Boolean          @default(true) // for moderation
+  createdAt     DateTime         @default(now())
+
+  @@index([sessionId])
+  @@index([senderUserId])
+  @@index([createdAt])
+}
+
+enum SharedSenderType {
+  USER
+  AI_ROLE
 }

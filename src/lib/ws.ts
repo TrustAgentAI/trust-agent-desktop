@@ -22,9 +22,23 @@ type WSEventType =
   | 'session-end'
   | 'connected'
   | 'disconnected'
-  | 'reconnecting';
+  | 'reconnecting'
+  // Shared study session events
+  | 'shared-session-start'
+  | 'shared-message'
+  | 'member-joined'
+  | 'member-left'
+  | 'shared-session-end';
 
-type WSSendType = 'user-message' | 'start-session' | 'cancel-task' | 'agent:message';
+type WSSendType =
+  | 'user-message'
+  | 'start-session'
+  | 'cancel-task'
+  | 'agent:message'
+  // Shared study session send types
+  | 'shared:join-session'
+  | 'shared:leave-session'
+  | 'shared:send-message';
 
 type EventHandler = (data: unknown) => void;
 

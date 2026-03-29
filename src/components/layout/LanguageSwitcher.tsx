@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import {
   getLocale,
-  setLocale,
+  setLocaleManual,
   onLocaleChange,
+  getWasAutoDetected,
   LOCALE_META,
   SUPPORTED_LOCALES,
   type SupportedLocale,
@@ -11,10 +12,15 @@ import {
 export function LanguageSwitcher() {
   const [locale, setCurrentLocale] = useState<SupportedLocale>(getLocale());
   const [open, setOpen] = useState(false);
+  const [autoDetected, setAutoDetected] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const unsub = onLocaleChange((l) => setCurrentLocale(l));
+    setAutoDetected(getWasAutoDetected());
+    const unsub = onLocaleChange((l) => {
+      setCurrentLocale(l);
+      setAutoDetected(getWasAutoDetected());
+    });
     return unsub;
   }, []);
 
@@ -41,7 +47,7 @@ export function LanguageSwitcher() {
 
   const handleSelect = async (l: SupportedLocale) => {
     setOpen(false);
-    await setLocale(l);
+    await setLocaleManual(l);
   };
 
   return (
@@ -69,6 +75,9 @@ export function LanguageSwitcher() {
           <path d="M2 12h20" />
         </svg>
         <span>{meta.nativeName}</span>
+        {autoDetected && (
+          <span className="text-[9px] opacity-40 ml-0.5">(auto)</span>
+        )}
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="12"

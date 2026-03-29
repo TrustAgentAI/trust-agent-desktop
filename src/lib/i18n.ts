@@ -1,8 +1,10 @@
 /**
  * Trust Agent Desktop - Internationalization Engine
  *
- * Adapted for React (non-Next.js) with same API surface as the marketplace i18n.
- * Language detection: browser language > user preference (localStorage) > URL param
+ * Auto-detects browser language on first visit and translates the UI immediately.
+ * Priority: URL param (?lang=xx) > localStorage preference > browser language > English
+ * First-visit auto-detection is persisted so returning users keep their language.
+ * Manual override via LanguageSwitcher always takes priority over auto-detection.
  */
 
 export const SUPPORTED_LOCALES = [
@@ -52,12 +54,41 @@ export const LOCALE_META: Record<SupportedLocale, { name: string; nativeName: st
 };
 
 /* ---------------------------------------------------------------------------
+ * Constants for localStorage keys
+ * --------------------------------------------------------------------------- */
+
+const LS_LOCALE_KEY = "ta-desktop-locale";
+const LS_MANUAL_KEY = "ta-desktop-locale-manual";
+
+/* ---------------------------------------------------------------------------
+ * Browser locale to supported locale mapping
+ * --------------------------------------------------------------------------- */
+
+const LOCALE_MAP: Record<string, SupportedLocale> = {
+  en: "en", es: "es", fr: "fr", de: "de", it: "it", pt: "pt", nl: "nl",
+  pl: "pl", ar: "ar", zh: "zh", ja: "ja", ko: "ko", hi: "hi", tr: "tr",
+  ru: "ru", uk: "uk", sv: "sv", da: "da", no: "no", nb: "no", nn: "no",
+  cs: "cs", hu: "hu", ro: "ro", el: "el", th: "th", vi: "vi", id: "id",
+  ms: "ms", tl: "tl", fil: "tl", sw: "sw", he: "he", iw: "he",
+  bn: "bn", ta: "ta", pa: "pa",
+  "en-US": "en", "en-GB": "en", "en-AU": "en", "en-CA": "en",
+  "es-MX": "es", "es-AR": "es", "es-CO": "es", "es-419": "es",
+  "fr-FR": "fr", "fr-CA": "fr", "fr-BE": "fr", "fr-CH": "fr",
+  "de-AT": "de", "de-CH": "de",
+  "pt-BR": "pt", "pt-PT": "pt",
+  "zh-CN": "zh", "zh-TW": "zh", "zh-HK": "zh", "zh-Hans": "zh", "zh-Hant": "zh",
+  "ar-SA": "ar", "ar-EG": "ar", "ar-AE": "ar", "ar-MA": "ar",
+  "nl-BE": "nl",
+};
+
+/* ---------------------------------------------------------------------------
  * Internal state
  * --------------------------------------------------------------------------- */
 
 type TranslationDict = Record<string, unknown>;
 
 let currentLocale: SupportedLocale = "en";
+let wasAutoDetected = false;
 const loadedTranslations: Partial<Record<SupportedLocale, TranslationDict>> = {};
 const listeners: Array<(locale: SupportedLocale) => void> = [];
 
@@ -125,19 +156,47 @@ async function loadTranslations(locale: SupportedLocale): Promise<TranslationDic
  * Public API
  * --------------------------------------------------------------------------- */
 
+/**
+ * Map a browser locale string (BCP 47) to our supported locale.
+ */
+function mapBrowserLocale(tag: string): SupportedLocale | undefined {
+  const mapped = LOCALE_MAP[tag];
+  if (mapped) return mapped;
+  const base = tag.split("-")[0].toLowerCase();
+  const baseMapped = LOCALE_MAP[base];
+  if (baseMapped) return baseMapped;
+  if (isSupportedLocale(base)) return base;
+  return undefined;
+}
+
 export function detectLocale(): SupportedLocale {
   // 1. URL param ?lang=xx
   const params = new URLSearchParams(window.location.search);
   const urlLang = params.get("lang");
   if (urlLang && isSupportedLocale(urlLang)) return urlLang;
 
-  // 2. User preference in localStorage
-  const stored = localStorage.getItem("ta-desktop-locale");
-  if (stored && isSupportedLocale(stored)) return stored as SupportedLocale;
+  // 2. Returning user - stored manual preference
+  const isManual = localStorage.getItem(LS_MANUAL_KEY);
+  const stored = localStorage.getItem(LS_LOCALE_KEY);
+  if (isManual === "true" && stored && isSupportedLocale(stored)) {
+    return stored as SupportedLocale;
+  }
 
-  // 3. Browser language
-  const browserLang = navigator.language.split("-")[0];
-  if (isSupportedLocale(browserLang)) return browserLang;
+  // 3. Returning user - stored auto-detected preference
+  if (stored && isSupportedLocale(stored)) {
+    wasAutoDetected = true;
+    return stored as SupportedLocale;
+  }
+
+  // 4. First visit - auto-detect from browser languages
+  const languages = navigator.languages ?? [navigator.language];
+  for (const lang of languages) {
+    const mapped = mapBrowserLocale(lang);
+    if (mapped) {
+      wasAutoDetected = true;
+      return mapped;
+    }
+  }
 
   return "en";
 }
@@ -154,17 +213,32 @@ export async function setLocale(locale: SupportedLocale): Promise<void> {
   await loadTranslations(locale);
   currentLocale = locale;
 
-  localStorage.setItem("ta-desktop-locale", locale);
+  localStorage.setItem(LS_LOCALE_KEY, locale);
   document.documentElement.lang = locale;
   document.documentElement.dir = RTL_LOCALES.includes(locale) ? "rtl" : "ltr";
 
   listeners.forEach((fn) => fn(locale));
 }
 
+/**
+ * Set locale via manual user action (LanguageSwitcher).
+ * Marks the preference as manual so auto-detection is disabled for future visits.
+ */
+export async function setLocaleManual(locale: SupportedLocale): Promise<void> {
+  wasAutoDetected = false;
+  localStorage.setItem(LS_MANUAL_KEY, "true");
+  await setLocale(locale);
+}
+
 export async function initI18n(): Promise<SupportedLocale> {
   const detected = detectLocale();
   await setLocale(detected);
   return detected;
+}
+
+/** Whether the current locale was auto-detected from the browser (first visit). */
+export function getWasAutoDetected(): boolean {
+  return wasAutoDetected;
 }
 
 export function t(key: string, params?: Record<string, string | number>): string {

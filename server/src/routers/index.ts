@@ -8,6 +8,7 @@ import { marketplaceRouter } from './marketplace';
 import { paymentsRouter } from './payments';
 import { adminRouter } from './admin';
 import { enterpriseRouter } from './enterprise';
+import { studyGroupsRouter } from './study-groups';
 
 export const appRouter = router({
   auth: authRouter,
@@ -19,6 +20,7 @@ export const appRouter = router({
   payments: paymentsRouter,
   admin: adminRouter,
   enterprise: enterpriseRouter,
+  studyGroups: studyGroupsRouter,
 });
 
 export type AppRouter = typeof appRouter;
