@@ -4,7 +4,7 @@
  * Never shows session content - only the wellbeing signal.
  */
 import { useMemo, useEffect, useState } from 'react';
-import { Shield, TrendingUp, TrendingDown, Minus, ExternalLink, AlertTriangle, Loader2 } from 'lucide-react';
+import { Shield, TrendingUp, TrendingDown, Minus, ExternalLink, AlertTriangle } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
@@ -113,7 +113,7 @@ export function WellbeingScore({
   void accentColor;
 
   const [wellbeingSignals, setWellbeingSignals] = useState<WellbeingData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   // Fetch wellbeing signals from API via the hires endpoint or sessions data
   useEffect(() => {

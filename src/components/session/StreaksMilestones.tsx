@@ -3,7 +3,7 @@
  * and celebration animations when new milestones are earned.
  */
 import React, { useEffect, useState } from 'react';
-import { Flame, Award, Trophy, Clock, Zap, Loader2 } from 'lucide-react';
+import { Flame, Award, Trophy, Clock, Zap } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { api } from '@/lib/api';
 
@@ -227,7 +227,7 @@ interface StreaksMilestonesProps {
 
 export function StreaksMilestones({ hireId, streakDays, longestStreakDays, accentColor, compact = false }: StreaksMilestonesProps) {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [pendingCelebrations, setPendingCelebrations] = useState<Milestone[]>([]);
 
   const accent = accentColor || 'var(--color-electric-blue)';
@@ -306,7 +306,7 @@ export function StreaksMilestones({ hireId, streakDays, longestStreakDays, accen
             </span>
           </div>
           {/* Milestone count */}
-          {milestonesReached.length > 0 && (
+          {milestones.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <Trophy size={12} color={accent} />
               <span
@@ -317,7 +317,7 @@ export function StreaksMilestones({ hireId, streakDays, longestStreakDays, accen
                   fontWeight: 600,
                 }}
               >
-                {milestonesReached.length}
+                {milestones.length}
               </span>
             </div>
           )}

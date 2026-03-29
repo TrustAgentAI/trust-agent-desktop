@@ -4,7 +4,6 @@ import {
   Clock,
   TrendingUp,
   Bell,
-  BellOff,
   AlertTriangle,
   CheckCircle2,
   Users,
@@ -57,28 +56,16 @@ interface ChildActivity {
 
 // --- Add Dependent Modal ---
 
-function AddDependentModal({ onClose, onAdd }: { onClose: () => void; onAdd: (p: DependentProfile) => void }) {
+function AddDependentModal({ onClose, onAdd }: { onClose: () => void; onAdd: () => void }) {
   const [name, setName] = React.useState('');
   const [type, setType] = React.useState<'child' | 'elderly'>('child');
   const [limit, setLimit] = React.useState(45);
 
   const handleAdd = () => {
     if (!name.trim()) return;
-    onAdd({
-      id: `dep-${Date.now()}`,
-      name: name.trim(),
-      type,
-      companionName: type === 'child' ? 'Learning Companion' : 'Daily Companion',
-      dailyTimeLimitMinutes: limit,
-      todayUsageMinutes: 0,
-      totalSessions: 0,
-      currentStreak: 0,
-      lastSessionAt: null,
-      sessionLogs: [],
-      wellbeingFlags: [],
-      notificationsEnabled: true,
-    });
-    onClose();
+    // In production, this would call an API to create the family link.
+    // The guardian adds a child by email/invite code, not by creating one locally.
+    onAdd();
   };
 
   return (

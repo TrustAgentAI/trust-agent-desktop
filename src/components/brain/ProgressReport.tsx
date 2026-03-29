@@ -65,22 +65,24 @@ export function ProgressReport({
   const accent = accentColor || 'var(--color-electric-blue)';
   const [copied, setCopied] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [reports, setReports] = useState<{ id: string; reportUrl: string; reportType: string; generatedAt: string }[]>([]);
-  const [hireData, setHireData] = useState<{ totalSessions: number; totalMinutes: number; streakDays: number; longestStreakDays: number } | null>(null);
-  const [milestonesList, setMilestonesList] = useState<{ id: string; type: string; label: string; achievedAt: string }[]>([]);
+  const [hireData] = useState<{ totalSessions: number; totalMinutes: number; streakDays: number; longestStreakDays: number } | null>(null);
+  const [milestonesList, setMilestonesList] = useState<{ id: string; type: 'session' | 'streak' | 'time'; label: string; achievedAt: number; roleId?: string; roleName?: string }[]>([]);
 
   // Fetch real data from API on mount
   useEffect(() => {
     async function loadData() {
       try {
-        const [reportsRes, milestonesRes] = await Promise.all([
-          api.post<any>('/api/trpc/reports.listReports', { json: { hireId: roleId, limit: 5 } }),
-          api.post<any>('/api/trpc/milestones.getMilestones', { json: { hireId: roleId } }),
-        ]);
-        const rData = reportsRes?.result?.data ?? reportsRes ?? [];
+        const milestonesRes = await api.post<any>('/api/trpc/milestones.getMilestones', { json: { hireId: roleId } });
         const mData = milestonesRes?.result?.data ?? milestonesRes ?? [];
-        setReports(rData);
-        setMilestonesList(mData);
+        // Map API milestone types to the local Milestone type union
+        const mapped = mData.map((m: any) => {
+          const typeStr = (m.type || '').toLowerCase();
+          let mappedType: 'session' | 'streak' | 'time' = 'session';
+          if (typeStr.includes('streak')) mappedType = 'streak';
+          else if (typeStr.includes('time')) mappedType = 'time';
+          return { ...m, type: mappedType, achievedAt: new Date(m.achievedAt).getTime() };
+        });
+        setMilestonesList(mapped);
       } catch {
         // API not available
       }
@@ -88,9 +90,11 @@ export function ProgressReport({
     loadData();
   }, [roleId]);
 
-  const totalSessions = hireData?.totalSessions ?? brain.totalSessions ?? 0;
-  const totalMinutes = hireData?.totalMinutes ?? brain.totalMinutes ?? 0;
+  const totalSessions = hireData?.totalSessions ?? 0;
+  const totalMinutes = hireData?.totalMinutes ?? 0;
   const roleMilestones = milestonesList;
+  const currentStreak = hireData?.streakDays ?? 0;
+  const longestStreak = hireData?.longestStreakDays ?? 0;
 
   const dateRange = useMemo(() => {
     const now = new Date();
@@ -110,8 +114,8 @@ export function ProgressReport({
       stats: {
         totalSessions,
         totalMinutes,
-        currentStreak: streaks.currentStreak,
-        longestStreak: streaks.longestStreak,
+        currentStreak,
+        longestStreak,
       },
       milestones: roleMilestones,
       accentColor: accent,
@@ -128,8 +132,8 @@ export function ProgressReport({
       brain,
       totalSessions,
       totalMinutes,
-      streaks.currentStreak,
-      streaks.longestStreak,
+      currentStreak,
+      longestStreak,
       roleMilestones,
       accent,
       education,
@@ -303,7 +307,7 @@ export function ProgressReport({
         <StatCard
           icon={<Flame size={14} />}
           label="Streak"
-          value={`${hireData?.streakDays ?? brain.streakDays ?? 0} days`}
+          value={`${currentStreak} days`}
           accent="#F59E0B"
         />
         <StatCard
