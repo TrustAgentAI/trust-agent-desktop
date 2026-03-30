@@ -285,16 +285,22 @@ export function NotificationCenter() {
             {/* Notification list */}
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {isLoading && notifications.length === 0 && (
-                <div
-                  style={{
-                    padding: '32px 16px',
-                    textAlign: 'center',
-                    color: 'var(--color-text-muted)',
-                    fontSize: 13,
-                    fontFamily: 'var(--font-sans)',
-                  }}
-                >
-                  Loading...
+                <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0' }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--color-surface-2)', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(30,111,255,0.06) 50%, transparent 100%)', animation: 'shimmer 1.5s ease-in-out infinite' }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ width: '80%', height: 12, borderRadius: 4, background: 'var(--color-surface-2)', marginBottom: 6, position: 'relative', overflow: 'hidden' }}>
+                          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(30,111,255,0.06) 50%, transparent 100%)', animation: 'shimmer 1.5s ease-in-out infinite' }} />
+                        </div>
+                        <div style={{ width: '60%', height: 10, borderRadius: 4, background: 'var(--color-surface-2)', position: 'relative', overflow: 'hidden' }}>
+                          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(30,111,255,0.06) 50%, transparent 100%)', animation: 'shimmer 1.5s ease-in-out infinite' }} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
 

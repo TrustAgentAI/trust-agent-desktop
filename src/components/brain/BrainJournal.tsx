@@ -125,6 +125,7 @@ export function BrainJournal({ hireId, companionName }: BrainJournalProps) {
   const [summary, setSummary] = React.useState<BrainSummary | null>(null);
   const [notes, setNotes] = React.useState<BrainMemoryNote[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState<string | null>(null);
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [nextCursor, setNextCursor] = React.useState<string | null>(null);
   const [_totalNotes, setTotalNotes] = React.useState(0);
@@ -136,6 +137,7 @@ export function BrainJournal({ hireId, companionName }: BrainJournalProps) {
   React.useEffect(() => {
     async function load() {
       setLoading(true);
+      setLoadError(null);
       try {
         const [summaryRes, notesRes] = await Promise.all([
           api.get<BrainSummary>(`/api/trpc/brain.getBrainSummary?input=${encodeURIComponent(JSON.stringify({ json: { hireId } }))}`),
@@ -144,15 +146,23 @@ export function BrainJournal({ hireId, companionName }: BrainJournalProps) {
           ),
         ]);
 
-        const sData = (summaryRes as any)?.result?.data ?? summaryRes;
-        const nData = (notesRes as any)?.result?.data ?? notesRes;
+        const sRaw = summaryRes as unknown as Record<string, unknown>;
+        const sData = sRaw?.result
+          ? (sRaw.result as Record<string, unknown>)?.data
+          : summaryRes;
+        const nRaw = notesRes as unknown as Record<string, unknown>;
+        const nData = nRaw?.result
+          ? (nRaw.result as Record<string, unknown>)?.data
+          : notesRes;
 
-        setSummary(sData);
-        setNotes(nData.notes || []);
-        setNextCursor(nData.nextCursor);
-        setTotalNotes(nData.total || 0);
+        setSummary(sData as BrainSummary);
+        const nd = nData as { notes?: BrainMemoryNote[]; nextCursor?: string | null; total?: number };
+        setNotes(nd.notes || []);
+        setNextCursor(nd.nextCursor ?? null);
+        setTotalNotes(nd.total || 0);
       } catch (err) {
         console.error('[BrainJournal] Failed to load:', err);
+        setLoadError('Unable to load your Brain journal. Please try again later.');
       } finally {
         setLoading(false);
       }
@@ -200,11 +210,47 @@ export function BrainJournal({ hireId, companionName }: BrainJournalProps) {
 
   if (loading) {
     return (
-      <div style={{ padding: 32, textAlign: 'center' }}>
-        <Brain size={32} style={{ color: 'var(--color-electric-blue)', opacity: 0.5, marginBottom: 12 }} />
-        <div style={{ fontSize: 13, color: 'var(--color-text-muted)', fontFamily: 'var(--font-sans)' }}>
-          Loading Brain journal...
+      <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Phase 13: Skeleton shimmer loading state */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '12px 0' }}>
+          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--color-surface-2)', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(30,111,255,0.06) 50%, transparent 100%)', animation: 'shimmer 1.5s ease-in-out infinite' }} />
+          </div>
+          <div style={{ width: 180, height: 16, borderRadius: 4, background: 'var(--color-surface-2)', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(30,111,255,0.06) 50%, transparent 100%)', animation: 'shimmer 1.5s ease-in-out infinite' }} />
+          </div>
         </div>
+        {[1, 2, 3].map((i) => (
+          <div key={i} style={{ padding: 16, background: 'var(--color-surface-1)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
+            <div style={{ width: 100, height: 10, borderRadius: 4, background: 'var(--color-surface-2)', marginBottom: 10, position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(30,111,255,0.06) 50%, transparent 100%)', animation: 'shimmer 1.5s ease-in-out infinite' }} />
+            </div>
+            <div style={{ width: '90%', height: 14, borderRadius: 4, background: 'var(--color-surface-2)', marginBottom: 6, position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(30,111,255,0.06) 50%, transparent 100%)', animation: 'shimmer 1.5s ease-in-out infinite' }} />
+            </div>
+            <div style={{ width: '70%', height: 14, borderRadius: 4, background: 'var(--color-surface-2)', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(30,111,255,0.06) 50%, transparent 100%)', animation: 'shimmer 1.5s ease-in-out infinite' }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Phase 13: Error state
+  if (loadError) {
+    return (
+      <div style={{ padding: 32, textAlign: 'center' }}>
+        <Brain size={32} style={{ color: 'var(--color-error)', opacity: 0.5, marginBottom: 12 }} />
+        <div style={{ fontSize: 14, color: 'var(--color-error)', fontFamily: 'var(--font-sans)', marginBottom: 12 }}>
+          {loadError}
+        </div>
+        <button
+          onClick={() => window.location.reload()}
+          style={{ fontSize: 13, color: 'var(--color-electric-blue)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'var(--font-sans)' }}
+        >
+          Try again
+        </button>
       </div>
     );
   }

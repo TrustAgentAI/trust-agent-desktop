@@ -1,0 +1,94 @@
+{
+  "nav": {
+    "chat": "Chat",
+    "tasks": "Tasks",
+    "marketplace": "Marketplace",
+    "permissions": "Permissions",
+    "settings": "Settings"
+  },
+  "sidebar": {
+    "hired_roles": "Hired Roles",
+    "add_role": "Add Role",
+    "no_roles": "No roles hired yet",
+    "tier_free": "FREE",
+    "tier_pro": "PRO",
+    "tier_ent": "ENT"
+  },
+  "chat": {
+    "send": "Send",
+    "placeholder": "Type a message...",
+    "thinking": "Thinking...",
+    "clear_history": "Clear History",
+    "export_chat": "Export Chat"
+  },
+  "tasks": {
+    "title": "Tasks",
+    "add_task": "Add Task",
+    "in_progress": "In Progress",
+    "completed": "Completed",
+    "pending": "Pending",
+    "no_tasks": "No tasks yet"
+  },
+  "marketplace": {
+    "browse": "Browse Agents",
+    "search_placeholder": "Search agents...",
+    "hire": "Hire",
+    "install": "Install",
+    "trust_score": "Trust Score",
+    "price": "Price",
+    "free": "Free",
+    "categories": "Categories",
+    "filter": "Filter",
+    "sort": "Sort"
+  },
+  "permissions": {
+    "title": "Permissions",
+    "granted": "Granted",
+    "denied": "Denied",
+    "pending_review": "Pending Review",
+    "file_access": "File Access",
+    "network_access": "Network Access",
+    "system_access": "System Access"
+  },
+  "settings": {
+    "title": "Settings",
+    "general": "General",
+    "appearance": "Appearance",
+    "language": "Language",
+    "notifications": "Notifications",
+    "api_keys": "API Keys",
+    "about": "About",
+    "theme": "Theme",
+    "dark_mode": "Dark Mode",
+    "light_mode": "Light Mode"
+  },
+  "connection": {
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "reconnecting": "Reconnecting...",
+    "gateway_url": "Gateway URL"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Retry",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "search": "Search",
+    "no_results": "No results found",
+    "close": "Close",
+    "open": "Open",
+    "delete": "Delete",
+    "edit": "Edit"
+  },
+  "auth": {
+    "signin": "Sign In",
+    "signup": "Sign Up",
+    "logout": "Log Out",
+    "email": "Email",
+    "password": "Password"
+  }
+}

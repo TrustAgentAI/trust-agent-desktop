@@ -26,13 +26,15 @@ export function StudyGroupList() {
   const [joinCode, setJoinCode] = React.useState('');
   const [joinError, setJoinError] = React.useState<string | null>(null);
   const [joining, setJoining] = React.useState(false);
+  const [fetchError, setFetchError] = React.useState<string | null>(null);
 
   async function fetchGroups() {
+    setFetchError(null);
     try {
       const data = await api.get<StudyGroupSummary[]>('/trpc/studyGroups.getMyGroups');
       setGroups(data);
     } catch {
-      // Silently handle - empty state shown
+      setFetchError('Unable to load study groups. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -163,8 +165,35 @@ export function StudyGroupList() {
 
       {/* Group cards */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: 'var(--color-text-muted)', fontFamily: 'var(--font-sans)' }}>
-          Loading study groups...
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '20px 0' }}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} style={{ padding: 16, background: 'var(--color-surface-1, rgba(255,255,255,0.03))', border: '1px solid var(--color-border, rgba(255,255,255,0.07))', borderRadius: 12 }}>
+              <div style={{ width: '60%', height: 14, borderRadius: 4, background: 'var(--color-surface-2, rgba(255,255,255,0.06))', marginBottom: 8, position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(30,111,255,0.06) 50%, transparent 100%)', animation: 'shimmer 1.5s ease-in-out infinite' }} />
+              </div>
+              <div style={{ width: '40%', height: 10, borderRadius: 4, background: 'var(--color-surface-2, rgba(255,255,255,0.06))', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(30,111,255,0.06) 50%, transparent 100%)', animation: 'shimmer 1.5s ease-in-out infinite' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : fetchError ? (
+        <div
+          style={{
+            textAlign: 'center',
+            padding: 60,
+            color: 'var(--color-text-muted)',
+            fontFamily: 'var(--font-sans)',
+          }}
+        >
+          <Users size={32} style={{ color: 'var(--color-error)', opacity: 0.5, marginBottom: 12 }} />
+          <p style={{ fontSize: 14, color: 'var(--color-error)', margin: '0 0 12px' }}>{fetchError}</p>
+          <button
+            onClick={() => { setLoading(true); fetchGroups(); }}
+            style={{ fontSize: 13, color: 'var(--color-electric-blue)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+          >
+            Try again
+          </button>
         </div>
       ) : groups.length === 0 ? (
         <div

@@ -61,7 +61,7 @@ export function DashboardPage() {
           })));
         }
       })
-      .catch((err) => {
+      .catch(() => {
         if (cancelled) return;
         setLoadError(getErrorMessage());
         // Fall back to agentStore data

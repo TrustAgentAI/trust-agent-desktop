@@ -67,26 +67,35 @@ export function ProgressReport({
   const accent = accentColor || 'var(--color-electric-blue)';
   const [copied, setCopied] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [loadingMilestones, setLoadingMilestones] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [hireData] = useState<{ totalSessions: number; totalMinutes: number; streakDays: number; longestStreakDays: number } | null>(null);
   const [milestonesList, setMilestonesList] = useState<{ id: string; type: 'session' | 'streak' | 'time'; label: string; achievedAt: number; roleId?: string; roleName?: string }[]>([]);
 
   // Fetch real data from API on mount
   useEffect(() => {
     async function loadData() {
+      setLoadingMilestones(true);
+      setLoadError(null);
       try {
-        const milestonesRes = await api.post<any>('/api/trpc/milestones.getMilestones', { json: { hireId: roleId } });
-        const mData = milestonesRes?.result?.data ?? milestonesRes ?? [];
+        const milestonesRes = await api.post<Record<string, unknown>>('/api/trpc/milestones.getMilestones', { json: { hireId: roleId } });
+        const mData = (milestonesRes as Record<string, unknown>)?.result
+          ? ((milestonesRes as Record<string, unknown>).result as Record<string, unknown>)?.data
+          : milestonesRes;
+        const mArray = Array.isArray(mData) ? mData : [];
         // Map API milestone types to the local Milestone type union
-        const mapped = mData.map((m: any) => {
-          const typeStr = (m.type || '').toLowerCase();
+        const mapped = mArray.map((m: Record<string, unknown>) => {
+          const typeStr = ((m.type as string) || '').toLowerCase();
           let mappedType: 'session' | 'streak' | 'time' = 'session';
           if (typeStr.includes('streak')) mappedType = 'streak';
           else if (typeStr.includes('time')) mappedType = 'time';
-          return { ...m, type: mappedType, achievedAt: new Date(m.achievedAt).getTime() };
+          return { ...m, type: mappedType, achievedAt: new Date(m.achievedAt as string).getTime() } as { id: string; type: 'session' | 'streak' | 'time'; label: string; achievedAt: number; roleId?: string; roleName?: string };
         });
         setMilestonesList(mapped);
       } catch {
-        // API not available
+        setLoadError('Unable to load progress data. Please try again later.');
+      } finally {
+        setLoadingMilestones(false);
       }
     }
     loadData();
@@ -177,6 +186,36 @@ export function ProgressReport({
     roleCategory === 'health' ? <Heart size={14} /> :
     roleCategory === 'career' ? <Briefcase size={14} /> :
     <FileText size={14} />;
+
+  // Phase 13: Loading state
+  if (loadingMilestones) {
+    return (
+      <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ width: '50%', height: 20, borderRadius: 4, background: 'var(--color-surface-2)', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(30,111,255,0.06) 50%, transparent 100%)', animation: 'shimmer 1.5s ease-in-out infinite' }} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} style={{ height: 60, borderRadius: 'var(--radius-lg)', background: 'var(--color-surface-2)', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(30,111,255,0.06) 50%, transparent 100%)', animation: 'shimmer 1.5s ease-in-out infinite' }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Phase 13: Error state
+  if (loadError) {
+    return (
+      <div style={{ padding: 16, textAlign: 'center' }}>
+        <BarChart3 size={32} style={{ color: 'var(--color-error)', opacity: 0.5, marginBottom: 12 }} />
+        <div style={{ fontSize: 14, color: 'var(--color-error)', fontFamily: 'var(--font-sans)' }}>
+          {loadError}
+        </div>
+      </div>
+    );
+  }
 
   // Phase 13: Empty state when no sessions completed yet
   if (totalSessions < 3 && roleMilestones.length === 0) {

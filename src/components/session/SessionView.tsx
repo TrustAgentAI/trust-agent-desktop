@@ -35,7 +35,6 @@ interface SessionViewProps {
 }
 
 const ANTI_DEPENDENCY_WARNING_MINS = 85;
-const ANTI_DEPENDENCY_END_MINS = 90;
 
 // File types accepted for upload
 const ACCEPTED_FILE_TYPES = '.pdf,.doc,.docx,.txt,.md,.png,.jpg,.jpeg,.csv';
