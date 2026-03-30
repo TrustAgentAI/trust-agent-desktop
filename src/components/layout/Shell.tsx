@@ -9,6 +9,7 @@ import {
   LogOut,
   User,
   Users,
+  Sparkles,
 } from 'lucide-react';
 import { TitleBar } from '@/components/layout/TitleBar';
 import { ConnectionStatus } from '@/components/layout/ConnectionStatus';
@@ -132,13 +133,34 @@ export function Shell({ children }: ShellProps) {
             {roles.length === 0 && (
               <div
                 style={{
-                  padding: '12px 8px',
-                  fontSize: 12,
-                  color: 'var(--color-text-mid)',
+                  padding: '16px 8px',
                   textAlign: 'center',
                 }}
               >
-                No roles hired yet.
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 'var(--radius-md)',
+                    background: 'rgba(30,111,255,0.06)',
+                    border: '1px solid rgba(30,111,255,0.12)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 10px',
+                  }}
+                >
+                  <Sparkles size={16} style={{ color: 'var(--color-electric-blue)' }} />
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: 'var(--color-text-muted)',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Your first companion is waiting. Browse the marketplace to get started.
+                </div>
               </div>
             )}
 

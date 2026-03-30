@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { router, protectedProcedure, publicProcedure } from '../trpc';
+import { generateFirstMessage, type QuizAnswers } from '../lib/onboarding/generateFirstMessage';
 
 // ── Role matching logic ─────────────────────────────────────────────────────
 // Maps quiz answers to the best matching role from the DB catalog.
@@ -57,15 +58,29 @@ function scoreRole(
   return score;
 }
 
+// Enhanced quiz answers schema - supports both basic and detailed quiz flows
+const QuizAnswersSchema = z.object({
+  goal: z.string(),
+  audience: z.string(),
+  level: z.string(),
+  // Enhanced Aha Moment fields
+  subject: z.string().optional(),
+  qualLevel: z.string().optional(),
+  examDate: z.string().optional(),
+  availableTime: z.string().optional(),
+  learningStyle: z.string().optional(),
+  biggestChallenge: z.string().optional(),
+  companionGender: z.enum(['female', 'male', 'no_preference']).optional(),
+  interviewDate: z.string().optional(),
+  wellbeingConcern: z.string().optional(),
+  userName: z.string().optional(),
+}).passthrough();
+
 export const onboardingRouter = router({
   submitQuiz: protectedProcedure
     .input(
       z.object({
-        answers: z.object({
-          goal: z.string(),
-          audience: z.string(),
-          level: z.string(),
-        }).passthrough(),
+        answers: QuizAnswersSchema,
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -108,12 +123,44 @@ export const onboardingRouter = router({
         }
       }
 
-      // Persist quiz response
+      // Generate the Aha Moment first message - personalised from quiz answers
+      let firstMessage: string | null = null;
+      if (bestRole) {
+        const quizAnswers: QuizAnswers = {
+          goal: answers.goal,
+          audience: answers.audience,
+          level: answers.level,
+          subject: answers.subject,
+          qualLevel: answers.qualLevel,
+          examDate: answers.examDate,
+          availableTime: answers.availableTime,
+          learningStyle: answers.learningStyle,
+          biggestChallenge: answers.biggestChallenge,
+          companionGender: answers.companionGender,
+          interviewDate: answers.interviewDate,
+          wellbeingConcern: answers.wellbeingConcern,
+          userName: answers.userName || ctx.user.name?.split(' ')[0],
+        };
+
+        firstMessage = generateFirstMessage(
+          {
+            name: bestRole.name,
+            companionName: bestRole.companionName,
+            category: bestRole.category,
+          },
+          quizAnswers,
+          bestRole.companionName,
+        );
+      }
+
+      // Persist quiz response with first message and match score
       const quizResponse = await ctx.prisma.quizResponse.create({
         data: {
           userId: ctx.user.id,
           answers: answers as object,
           recommendedRoleSlug: bestRole?.slug || null,
+          matchScore: Math.round(bestScore),
+          firstMessage,
         },
       });
 
@@ -137,6 +184,8 @@ export const onboardingRouter = router({
               badge: bestRole.audit?.badge || 'BASIC',
             }
           : null,
+        firstMessage,
+        matchScore: Math.round(bestScore),
       };
     }),
 
@@ -165,6 +214,8 @@ export const onboardingRouter = router({
       quizResponseId: latest.id,
       answers: latest.answers,
       completedAt: latest.completedAt,
+      firstMessage: latest.firstMessage,
+      matchScore: latest.matchScore,
       recommendedRole: role
         ? {
             id: role.id,
@@ -179,4 +230,26 @@ export const onboardingRouter = router({
         : null,
     };
   }),
+
+  // Get the stored first message for a specific hire (used when starting first session)
+  getFirstMessage: protectedProcedure
+    .input(z.object({ roleSlug: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const quiz = await ctx.prisma.quizResponse.findFirst({
+        where: {
+          userId: ctx.user.id,
+          recommendedRoleSlug: input.roleSlug,
+        },
+        orderBy: { completedAt: 'desc' },
+        select: {
+          firstMessage: true,
+          answers: true,
+        },
+      });
+
+      return {
+        firstMessage: quiz?.firstMessage ?? null,
+        hasQuizData: !!quiz,
+      };
+    }),
 });

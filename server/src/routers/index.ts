@@ -21,6 +21,15 @@ import { referralsRouter } from './referrals';
 import { collaborationRouter } from './collaboration';
 import { schoolRouter } from './school';
 import { offlineBrainRouter } from './offline-brain';
+import { safeguardingRouter } from './safeguarding';
+import { impactRouter } from './impact';
+import { reviewsRouter } from './reviews';
+import { progressSharingRouter } from './progress-sharing';
+import { auditRouter } from './audit';
+import { healthRouter } from './health';
+import { pricingRouter } from './pricing';
+import { systemRouter } from './system';
+import { featureFlagsRouter } from './feature-flags';
 
 export const appRouter = router({
   auth: authRouter,
@@ -45,6 +54,15 @@ export const appRouter = router({
   collaboration: collaborationRouter,
   school: schoolRouter,
   offlineBrain: offlineBrainRouter,
+  safeguarding: safeguardingRouter,
+  impact: impactRouter,
+  audit: auditRouter,
+  reviews: reviewsRouter,
+  progressSharing: progressSharingRouter,
+  health: healthRouter,
+  pricing: pricingRouter,
+  system: systemRouter,
+  featureFlags: featureFlagsRouter,
 });
 
 export type AppRouter = typeof appRouter;

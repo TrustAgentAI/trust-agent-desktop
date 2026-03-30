@@ -1,8 +1,7 @@
 import React from 'react';
 import { Search, SlidersHorizontal, ChevronDown } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
+import { CompanionCard } from '@/components/marketplace/CompanionCard';
 
 export interface RoleListItem {
   id: string;
@@ -41,18 +40,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   enterprise: 'Enterprise',
 };
 
-const BADGE_VARIANT: Record<string, 'platinum' | 'gold' | 'silver' | 'basic'> = {
-  PLATINUM: 'platinum',
-  GOLD: 'gold',
-  SILVER: 'silver',
-  BASIC: 'basic',
-};
-
-function formatPrice(pence: number): string {
-  if (pence === 0) return 'Free';
-  const pounds = (pence / 100).toFixed(2);
-  return `\u00A3${pounds}/mo`;
-}
 
 export function RoleGrid({
   roles,
@@ -269,7 +256,19 @@ export function RoleGrid({
             }}
           >
             {sorted.map((role) => (
-              <RoleCard key={role.id} role={role} onClick={() => onRoleClick(role.id)} />
+              <CompanionCard
+                key={role.id}
+                slug={role.slug}
+                companionName={role.companionName || role.name}
+                roleTitle={role.tagline}
+                avatarUrl={role.avatarUrl}
+                badge={role.trustBadge}
+                trustScore={role.trustScore}
+                category={role.category}
+                priceMonthly={role.priceMonthly}
+                accentColor={role.accentColor}
+                onClick={() => onRoleClick(role.id)}
+              />
             ))}
           </div>
         )}
@@ -300,114 +299,6 @@ export function RoleGrid({
   );
 }
 
-function RoleCard({ role, onClick }: { role: RoleListItem; onClick: () => void }) {
-  const accent = role.accentColor || 'var(--color-electric-blue)';
-
-  return (
-    <Card onClick={onClick} padding="0">
-      {/* Accent top bar */}
-      <div style={{ height: 3, background: accent, borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0' }} />
-
-      <div style={{ padding: '14px 16px' }}>
-        {/* Avatar and badges */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
-          {role.avatarUrl ? (
-            <img
-              src={role.avatarUrl}
-              alt={role.name}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 'var(--radius-md)',
-                flexShrink: 0,
-                objectFit: 'cover',
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 'var(--radius-md)',
-                background: `${accent}20`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 16,
-                fontWeight: 800,
-                color: accent,
-                fontFamily: 'var(--font-sans)',
-                flexShrink: 0,
-              }}
-            >
-              {role.name.charAt(0)}
-            </div>
-          )}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                color: '#E8EDF5',
-                fontFamily: 'var(--font-sans)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {role.name}
-            </div>
-            <div
-              style={{
-                fontSize: 11,
-                color: 'var(--color-text-muted)',
-                fontFamily: 'var(--font-sans)',
-              }}
-            >
-              {role.companionName}
-            </div>
-          </div>
-        </div>
-
-        {/* Tagline */}
-        <div
-          style={{
-            fontSize: 12,
-            color: 'var(--color-text-muted)',
-            lineHeight: 1.5,
-            marginBottom: 10,
-            fontFamily: 'var(--font-sans)',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-          }}
-        >
-          {role.tagline}
-        </div>
-
-        {/* Trust badge and price */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Badge variant={BADGE_VARIANT[role.trustBadge] || 'basic'}>
-              {role.trustBadge}
-            </Badge>
-            <Badge variant="trust" value={role.trustScore} />
-          </div>
-          <span
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              color: role.priceMonthly === 0 ? 'var(--color-success)' : '#E8EDF5',
-              fontFamily: 'var(--font-sans)',
-            }}
-          >
-            {formatPrice(role.priceMonthly)}
-          </span>
-        </div>
-      </div>
-    </Card>
-  );
-}
+// Legacy RoleCard removed - replaced by CompanionCard (Phase 16)
 
 export default RoleGrid;

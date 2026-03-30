@@ -1,9 +1,10 @@
 import React from 'react';
-import { Users, MessageSquare, Wifi, WifiOff, ShoppingBag } from 'lucide-react';
+import { Users, MessageSquare, Wifi, WifiOff } from 'lucide-react';
 import { useAgentStore } from '@/store/agentStore';
 import { useAuditStore } from '@/store/auditStore';
 import { wsClient } from '@/lib/ws';
 import { useNavigate } from 'react-router-dom';
+import { EmptyState, GhostCard } from '@/components/ui/EmptyState';
 
 export function DashboardPage() {
   const { roles: hiredRoles } = useAgentStore();
@@ -91,44 +92,40 @@ export function DashboardPage() {
         {hiredRoles.length === 0 && (
           <div
             style={{
-              textAlign: 'center',
-              padding: '40px 20px',
               background: 'var(--color-surface-1)',
               border: '1px solid var(--color-border)',
               borderRadius: 'var(--radius-lg)',
             }}
           >
-            <p
-              style={{
-                fontSize: '14px',
-                color: 'var(--color-text-muted)',
-                marginBottom: 16,
-                lineHeight: 1.6,
-              }}
-            >
-              No roles hired yet. Browse the marketplace to hire your first AI role.
-            </p>
-            <button
-              onClick={() => navigate('/marketplace')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '8px 20px',
-                background: 'var(--color-electric-blue)',
-                color: '#fff',
-                fontFamily: 'var(--font-sans)',
-                fontWeight: 600,
-                fontSize: '13px',
-                border: 'none',
-                borderRadius: 'var(--radius-md)',
-                cursor: 'pointer',
-                transition: 'opacity 0.15s ease',
-              }}
-            >
-              <ShoppingBag size={14} />
-              Browse Marketplace
-            </button>
+            <EmptyState
+              icon={<Users size={24} />}
+              title="Your first companion is waiting"
+              description="Browse the marketplace to find the expert who will change everything. Tutors, coaches, therapists, advisors - all independently audited."
+              ctaText="Browse Marketplace"
+              ctaAction={() => navigate('/marketplace')}
+              ghostContent={
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <GhostCard
+                    emoji="🎓"
+                    name="A-Level Maths Tutor"
+                    tagline="Expert exam preparation and concept mastery"
+                    badge="PLATINUM"
+                  />
+                  <GhostCard
+                    emoji="🧠"
+                    name="Mental Wellness Companion"
+                    tagline="CBT-informed daily emotional support"
+                    badge="GOLD"
+                  />
+                  <GhostCard
+                    emoji="💼"
+                    name="Career Counsellor"
+                    tagline="CV reviews, interview prep, career planning"
+                    badge="GOLD"
+                  />
+                </div>
+              }
+            />
           </div>
         )}
 
@@ -206,9 +203,25 @@ export function DashboardPage() {
         </h2>
 
         {recentEvents.length === 0 && (
-          <p style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
-            No recent activity.
-          </p>
+          <div
+            style={{
+              padding: '24px 16px',
+              background: 'var(--color-surface-1)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-lg)',
+              textAlign: 'center',
+            }}
+          >
+            <p
+              style={{
+                fontSize: '13px',
+                color: 'var(--color-text-muted)',
+                lineHeight: 1.6,
+              }}
+            >
+              Activity will appear here once you start your first session. Every action is logged for full transparency.
+            </p>
+          </div>
         )}
 
         {recentEvents.length > 0 && (

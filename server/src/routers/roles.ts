@@ -4,6 +4,52 @@ import { router, publicProcedure } from '../trpc';
 import { safeRoleSelect, toSafeRole } from '../lib/safe-role';
 
 export const rolesRouter = router({
+  // Alias for Phase 0 verification compatibility
+  list: publicProcedure
+    .input(
+      z.object({
+        page: z.number().int().min(1).default(1),
+        limit: z.number().int().min(1).max(100).default(20),
+        category: z.string().optional(),
+        badge: z.enum(['PLATINUM', 'GOLD', 'SILVER', 'BASIC']).optional(),
+        language: z.string().optional(),
+      }).optional()
+    )
+    .query(async ({ input, ctx }) => {
+      const page = input?.page ?? 1;
+      const limit = input?.limit ?? 20;
+      const skip = (page - 1) * limit;
+
+      const where: Record<string, unknown> = {
+        isActive: true,
+        publishedAt: { not: null },
+      };
+
+      if (input?.category) where.category = input.category;
+      if (input?.language) where.languageCode = input.language;
+      if (input?.badge) {
+        where.audit = { badge: input.badge };
+      }
+
+      const [roles, total] = await Promise.all([
+        ctx.prisma.role.findMany({
+          where,
+          select: safeRoleSelect,
+          skip,
+          take: limit,
+          orderBy: { publishedAt: 'desc' },
+        }),
+        ctx.prisma.role.count({ where }),
+      ]);
+
+      return {
+        roles,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      };
+    }),
+
   listPublished: publicProcedure
     .input(
       z.object({
@@ -78,16 +124,19 @@ export const rolesRouter = router({
     }));
   }),
 
-  getFeatured: publicProcedure.query(async ({ ctx }) => {
-    const roles = await ctx.prisma.role.findMany({
-      where: { isActive: true, isFeatured: true, publishedAt: { not: null } },
-      select: safeRoleSelect,
-      take: 12,
-      orderBy: { audit: { totalScore: 'desc' } },
-    });
+  getFeatured: publicProcedure
+    .input(z.object({ limit: z.number().int().min(1).max(50).default(12) }).optional())
+    .query(async ({ input, ctx }) => {
+      const limit = input?.limit ?? 12;
+      const roles = await ctx.prisma.role.findMany({
+        where: { isActive: true, isFeatured: true, publishedAt: { not: null } },
+        select: safeRoleSelect,
+        take: limit,
+        orderBy: { audit: { totalScore: 'desc' } },
+      });
 
-    return roles;
-  }),
+      return roles;
+    }),
 
   search: publicProcedure
     .input(

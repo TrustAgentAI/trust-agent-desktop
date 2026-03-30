@@ -16,10 +16,12 @@ import {
   Heart,
   Briefcase,
   Loader2,
+  BarChart3,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { api } from '@/lib/api';
 import type { BrainSummary } from '@/components/brain/BrainViewer';
 import {
@@ -175,6 +177,19 @@ export function ProgressReport({
     roleCategory === 'health' ? <Heart size={14} /> :
     roleCategory === 'career' ? <Briefcase size={14} /> :
     <FileText size={14} />;
+
+  // Phase 13: Empty state when no sessions completed yet
+  if (totalSessions < 3 && roleMilestones.length === 0) {
+    return (
+      <div style={{ padding: 16 }}>
+        <EmptyState
+          icon={<BarChart3 size={24} />}
+          title="Progress reports unlock after 3 sessions"
+          description="Complete 3 sessions to see your first progress report. Your companion tracks topics, strengths, and areas for growth automatically."
+        />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16 }}>

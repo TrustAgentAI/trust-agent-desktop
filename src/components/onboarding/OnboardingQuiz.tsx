@@ -40,6 +40,14 @@ export interface QuizAnswers {
   level: QuizLevel;
   recommendedRoleId: string;
   recommendedRoleName: string;
+  firstMessage?: string | null;   // The Aha Moment - personalised first message
+  matchScore?: number;
+  // Enhanced fields
+  subject?: string;
+  examDate?: string;
+  biggestChallenge?: string;
+  availableTime?: string;
+  userName?: string;
 }
 
 interface OnboardingQuizProps {
@@ -178,6 +186,8 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
   const [submitting, setSubmitting] = React.useState(false);
   const [recommended, setRecommended] = React.useState<RecommendedRole | null>(null);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
+  const [firstMessage, setFirstMessage] = React.useState<string | null>(null);
+  const [matchScore, setMatchScore] = React.useState<number>(0);
 
   const canNext =
     (step === 0 && goal !== null) ||
@@ -197,6 +207,8 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
         const result = await api.post<{
           quizResponseId: string;
           recommendedRole: RecommendedRole | null;
+          firstMessage: string | null;
+          matchScore: number;
         }>('/api/trpc/onboarding.submitQuiz', {
           json: { answers: { goal, audience, level } },
         });
@@ -205,6 +217,12 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
         if (data.recommendedRole) {
           setRecommended(data.recommendedRole);
         }
+        if (data.firstMessage) {
+          setFirstMessage(data.firstMessage);
+        }
+        if (data.matchScore) {
+          setMatchScore(data.matchScore);
+        }
         setStep(3);
       } catch (err: any) {
         setSubmitError(err?.message || 'Failed to submit quiz');
@@ -212,13 +230,15 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
         setSubmitting(false);
       }
     } else if (step === 3 && goal && audience && level && recommended) {
-      // Final step - complete onboarding
+      // Final step - complete onboarding with Aha Moment first message
       const answers: QuizAnswers = {
         goal,
         audience,
         level,
         recommendedRoleId: recommended.id,
         recommendedRoleName: recommended.name,
+        firstMessage,
+        matchScore,
       };
       onComplete(answers);
     }

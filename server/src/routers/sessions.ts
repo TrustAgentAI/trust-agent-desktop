@@ -4,6 +4,9 @@ import { router, protectedProcedure } from '../trpc';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { checkAndAwardMilestones } from './milestones';
+import { generateMemoryNote } from '../lib/brain/generateMemoryNote';
+import { runSafeguardingPreCheck } from '../lib/safeguarding/checker';
+import { runSafeguardingEscalation } from '../lib/safeguarding/escalationEngine';
 
 // S3 client for document uploads (B.7)
 const s3 = new S3Client({
@@ -115,6 +118,23 @@ export const sessionsRouter = router({
         });
       }
 
+      // ── Safeguarding pre-check for child accounts ──
+      const safeguardingResult = await runSafeguardingPreCheck(ctx.prisma, {
+        userId: ctx.user.id,
+        accountType: ctx.user.accountType,
+      });
+
+      if (!safeguardingResult.allowed) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: safeguardingResult.reason || 'Session blocked by safeguarding controls',
+          cause: {
+            code: safeguardingResult.eventType || 'SAFEGUARDING_BLOCK',
+            severity: safeguardingResult.severity,
+          },
+        });
+      }
+
       // Resolve exam mode from either boolean or mode string
       const isExamMode = input.examMode || input.mode === 'exam';
 
@@ -148,7 +168,7 @@ export const sessionsRouter = router({
       };
     }),
 
-  // ── B.6: End session with optional exam results ──
+  // ── B.6: End session with optional exam results + Visible Brain metadata ──
   endSession: protectedProcedure
     .input(
       z.object({
@@ -158,6 +178,15 @@ export const sessionsRouter = router({
         examTotal: z.number().int().optional(),
         examPercentage: z.number().int().optional(),
         examGrade: z.string().optional(),
+        // Visible Brain: session metadata for memory note generation
+        topicsCovered: z.array(z.string()).optional(),
+        correctAnswers: z.number().int().optional(),
+        totalQuestions: z.number().int().optional(),
+        struggledWith: z.array(z.string()).optional(),
+        breakthrough: z.string().optional(),
+        nextFocus: z.string().optional(),
+        examSubject: z.string().optional(),
+        examDate: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -363,6 +392,38 @@ export const sessionsRouter = router({
         session.hireId,
         { streakDays: newStreakDays, sessionCount: newSessionCount, totalMinutes: newTotalMinutes },
       );
+
+      // ── Visible Brain: Generate memory note after session ───────────────
+      try {
+        await generateMemoryNote(session.hireId, {
+          sessionId: session.id,
+          durationMinutes: durationMins,
+          topicsCovered: input.topicsCovered ?? [],
+          correctAnswers: input.correctAnswers,
+          totalQuestions: input.totalQuestions,
+          struggledWith: input.struggledWith,
+          breakthrough: input.breakthrough,
+          nextFocus: input.nextFocus,
+          examDate: input.examDate,
+          examSubject: input.examSubject,
+          sessionMode: session.examMode ? 'exam' : 'normal',
+          examScore: input.examScore,
+        });
+      } catch (err) {
+        // Memory note generation should never block session end
+        console.error('[brain] Memory note generation failed:', err);
+      }
+
+      // ── Safeguarding post-session escalation for child/vulnerable accounts ──
+      try {
+        await runSafeguardingEscalation(ctx.prisma, session.hireId, {
+          sessionId: session.id,
+          durationMinutes: durationMins,
+        });
+      } catch (err) {
+        // Safeguarding escalation should never block session end
+        console.error('[safeguarding] Post-session escalation failed:', err);
+      }
 
       // Return metadata only - NO message content
       return {

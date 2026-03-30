@@ -1,5 +1,5 @@
 import React from 'react';
-import { Send, Mic, MicOff, Clock, Brain, AlertTriangle, Upload, FileText, Timer, Paperclip, X } from 'lucide-react';
+import { Send, Mic, MicOff, Clock, Brain, AlertTriangle, Upload, FileText, Timer, Paperclip, X, MessageSquare, Volume2, VolumeX } from 'lucide-react';
 import { EnvironmentRenderer, type EnvironmentConfig } from './EnvironmentRenderer';
 import { ChatMessage, type ChatMessageData } from './ChatMessage';
 import { ExamTimerBar, ExamMode, ExamReportView, type ExamDuration, type ExamStatus, type ExamReport } from './ExamMode';
@@ -9,12 +9,18 @@ import { shouldUseMockAgent, getMockResponse } from '@/lib/mockAgent';
 import { wsClient } from '@/lib/ws';
 import api from '@/lib/api';
 import { getRoleAvatarUrl } from '@/lib/roleAvatar';
+import { EmptyState } from '@/components/ui/EmptyState';
 import {
   evaluateSession,
   shouldForceEndSession,
   recordSessionUsage,
   type BreakSuggestion,
 } from '@/lib/anti-dependency';
+import { useAmbientAudio } from '@/hooks/useAmbientAudio';
+import { useStreamingResponse, setupTokenStreaming } from '@/hooks/useStreamingResponse';
+
+// Phase 10.3: Role categories that default to voice input
+const VOICE_DEFAULT_CATEGORIES = ['daily-companion', 'elderly-companion', 'childrens-companion', 'mental-health'];
 
 interface SessionViewProps {
   environmentConfig?: EnvironmentConfig;
@@ -22,6 +28,10 @@ interface SessionViewProps {
   brainLastSync?: string;
   onEndSession?: () => void;
   isChildAccount?: boolean;
+  /** Phase 10.1: Ambient audio URL from environment JSON config */
+  ambientAudioUrl?: string;
+  /** Phase 10.3: Role category for voice-default detection */
+  roleCategory?: string;
 }
 
 const ANTI_DEPENDENCY_MINS = 45;
@@ -36,12 +46,23 @@ export function SessionView({
   brainLastSync: _brainLastSync,
   onEndSession,
   isChildAccount = false,
+  ambientAudioUrl,
+  roleCategory,
 }: SessionViewProps) {
   const { activeRoleId, roles } = useAgentStore();
   const { addMessage, getMessages } = useSession();
   const [isStreaming, setIsStreaming] = React.useState(false);
   const [inputValue, setInputValue] = React.useState('');
-  const [voiceActive, setVoiceActive] = React.useState(false);
+
+  // Phase 10.3: Default to voice mode for elderly/children roles
+  const shouldDefaultVoice = roleCategory ? VOICE_DEFAULT_CATEGORIES.includes(roleCategory) : false;
+  const [voiceActive, setVoiceActive] = React.useState(shouldDefaultVoice);
+
+  // Phase 10.1: Ambient audio integration
+  const ambientAudio = useAmbientAudio(ambientAudioUrl);
+
+  // Phase 10.2: Streaming token support
+  const streaming = useStreamingResponse();
   const [sessionStartedAt] = React.useState<number>(Date.now());
   const [sessionElapsed, setSessionElapsed] = React.useState(0);
   const [showDependencyReminder, setShowDependencyReminder] = React.useState(false);
@@ -349,10 +370,34 @@ export function SessionView({
     }, 1500);
   };
 
+  // Phase 10.2: Setup WebSocket token streaming listener
+  React.useEffect(() => {
+    if (!activeRoleId) return;
+
+    const cleanup = setupTokenStreaming(
+      (token) => {
+        streaming.appendToken(token);
+      },
+      (fullContent) => {
+        const finalContent = streaming.finishStreaming();
+        const agentMsg: ChatMessageData = {
+          id: `agent-stream-${Date.now()}`,
+          role: 'agent',
+          content: finalContent || fullContent,
+          timestamp: Date.now(),
+        };
+        addMessage(activeRoleId, agentMsg);
+        setIsStreaming(false);
+      },
+    );
+
+    return cleanup;
+  }, [activeRoleId, addMessage]);
+
   // Scroll to bottom on new messages
   React.useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length, isStreaming]);
+  }, [messages.length, isStreaming, streaming.streamedContent]);
 
   const formatTime = (seconds: number): string => {
     const h = Math.floor(seconds / 3600);
@@ -378,7 +423,10 @@ export function SessionView({
       timestamp: Date.now(),
     };
     addMessage(activeRoleId, userMsg);
+
+    // Phase 10.2: Show typing indicator IMMEDIATELY on send
     setIsStreaming(true);
+    streaming.startStreaming();
 
     if (shouldUseMockAgent()) {
       const mock = await getMockResponse();
@@ -390,11 +438,14 @@ export function SessionView({
       };
       addMessage(activeRoleId, agentMsg);
       setIsStreaming(false);
+      streaming.resetStreaming();
       return;
     }
 
     try {
+      // Phase 10.2: Emit message - tokens will stream back via WebSocket
       wsClient.emit('agent:message', { hireId: activeRoleId, content });
+      // Note: isStreaming is set to false in the token streaming 'done' handler above
     } catch {
       const errorMsg: ChatMessageData = {
         id: `err-${Date.now()}`,
@@ -403,8 +454,9 @@ export function SessionView({
         timestamp: Date.now(),
       };
       addMessage(activeRoleId, errorMsg);
+      setIsStreaming(false);
+      streaming.resetStreaming();
     }
-    setIsStreaming(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -431,36 +483,15 @@ export function SessionView({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            flexDirection: 'column',
-            gap: 16,
-            padding: 40,
           }}
         >
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 12,
-              background: 'var(--color-mid-blue)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 20,
-              fontWeight: 800,
-              color: 'var(--color-ion-cyan)',
-              fontFamily: 'var(--font-sans)',
-            }}
-          >
-            TA
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#E8EDF5', marginBottom: 4 }}>
-              Select a role to begin
-            </div>
-            <div style={{ fontSize: 13, color: 'var(--color-text-muted)', maxWidth: 360 }}>
-              Choose a role from the sidebar or hire one from the Marketplace.
-            </div>
-          </div>
+          <EmptyState
+            icon={<MessageSquare size={24} />}
+            title="Choose a companion to start"
+            description="Select a companion from the sidebar to begin a session, or take the onboarding quiz to find the perfect match for your needs."
+            ctaText={roles.length === 0 ? 'Browse Marketplace' : undefined}
+            ctaAction={roles.length === 0 ? () => { window.location.hash = '/marketplace'; } : undefined}
+          />
         </div>
       </EnvironmentRenderer>
     );
@@ -516,6 +547,46 @@ export function SessionView({
                 {brainConnected ? 'Brain synced' : 'Brain offline'}
               </span>
             </div>
+
+            {/* Phase 10.1: Ambient audio controls */}
+            {ambientAudioUrl && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button
+                  onClick={ambientAudio.toggleMute}
+                  title={ambientAudio.isMuted ? 'Unmute ambient audio' : 'Mute ambient audio'}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: ambientAudio.isMuted ? 'var(--color-text-muted)' : accent,
+                    cursor: 'pointer',
+                    padding: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  {ambientAudio.isMuted ? <VolumeX size={13} /> : <Volume2 size={13} />}
+                </button>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={ambientAudio.volume}
+                  onChange={(e) => ambientAudio.setVolume(parseFloat(e.target.value))}
+                  title={`Volume: ${Math.round(ambientAudio.volume * 100)}%`}
+                  style={{
+                    width: 60,
+                    height: 3,
+                    appearance: 'none',
+                    background: `linear-gradient(to right, ${accent} ${ambientAudio.volume * 100}%, rgba(255,255,255,0.1) ${ambientAudio.volume * 100}%)`,
+                    borderRadius: 2,
+                    outline: 'none',
+                    cursor: 'pointer',
+                    opacity: ambientAudio.isMuted ? 0.3 : 1,
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           {onEndSession && (
@@ -698,7 +769,21 @@ export function SessionView({
             />
           ))}
 
-          {isStreaming && (
+          {/* Phase 10.2: Show streaming content or typing indicator */}
+          {isStreaming && streaming.streamedContent && (
+            <ChatMessage
+              message={{
+                id: 'streaming',
+                role: 'agent',
+                content: streaming.streamedContent,
+                timestamp: Date.now(),
+              }}
+              agentName={activeRole.roleName}
+              accentColor={accent}
+              avatarUrl={roleAvatarUrl}
+            />
+          )}
+          {isStreaming && !streaming.streamedContent && (
             <ChatMessage
               message={{ id: 'typing', role: 'agent', content: '', timestamp: Date.now() }}
               agentName={activeRole.roleName}
@@ -711,32 +796,50 @@ export function SessionView({
           <div ref={bottomRef} />
         </div>
 
-        {/* Voice orb (when active) */}
+        {/* Phase 10.3: Voice orb - prominent for elderly/children roles, standard for others */}
         {voiceActive && (
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '16px 0',
+              padding: shouldDefaultVoice ? '24px 0' : '16px 0',
               flexShrink: 0,
+              flexDirection: 'column',
+              gap: 8,
             }}
           >
-            <div
+            <button
+              onClick={() => setVoiceActive(!voiceActive)}
               style={{
-                width: 64,
-                height: 64,
+                width: shouldDefaultVoice ? 88 : 64,
+                height: shouldDefaultVoice ? 88 : 64,
                 borderRadius: '50%',
                 background: `radial-gradient(circle, ${accent}60, ${accent}20)`,
-                boxShadow: `0 0 40px ${accent}30`,
+                boxShadow: `0 0 ${shouldDefaultVoice ? '60' : '40'}px ${accent}30`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 animation: 'pulse 2s ease-in-out infinite',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 200ms ease',
               }}
             >
-              <Mic size={24} color="#fff" />
-            </div>
+              <Mic size={shouldDefaultVoice ? 32 : 24} color="#fff" />
+            </button>
+            {shouldDefaultVoice && (
+              <span
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: accent,
+                  fontFamily: 'var(--font-sans)',
+                }}
+              >
+                Tap to talk
+              </span>
+            )}
           </div>
         )}
 
@@ -799,6 +902,42 @@ export function SessionView({
           </div>
         )}
 
+        {/* Phase 10.3: Prominent voice input for elderly/children roles */}
+        {shouldDefaultVoice && !voiceActive && !examStatus && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              padding: '12px 24px',
+              borderTop: '1px solid rgba(255,255,255,0.06)',
+              background: 'rgba(0,0,0,0.1)',
+              flexShrink: 0,
+            }}
+          >
+            <button
+              onClick={() => setVoiceActive(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '14px 32px',
+                background: `${accent}20`,
+                border: `2px solid ${accent}40`,
+                borderRadius: 'var(--radius-xl)',
+                color: accent,
+                fontSize: 16,
+                fontWeight: 700,
+                fontFamily: 'var(--font-sans)',
+                cursor: 'pointer',
+                transition: 'all 200ms ease',
+              }}
+            >
+              <Mic size={20} />
+              Tap to talk
+            </button>
+          </div>
+        )}
+
         {/* Input area */}
         <div
           style={{
@@ -806,6 +945,8 @@ export function SessionView({
             borderTop: '1px solid rgba(255,255,255,0.06)',
             background: 'rgba(0,0,0,0.15)',
             flexShrink: 0,
+            // Phase 10.3: Text input is secondary for voice-default roles
+            ...(shouldDefaultVoice && !voiceActive ? { opacity: 0.6 } : {}),
           }}
         >
           {/* Hidden file input */}

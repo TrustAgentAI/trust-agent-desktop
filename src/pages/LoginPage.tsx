@@ -7,6 +7,7 @@ import {
   getRememberedEmail,
   clearRememberedEmail,
 } from '@/lib/auth';
+import { HeroSection } from '@/components/layout/HeroSection';
 
 export function LoginPage() {
   const rememberedEmail = React.useMemo(() => getRememberedEmail(), []);
@@ -57,7 +58,7 @@ export function LoginPage() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        overflow: 'hidden',
+        overflow: 'auto',
       }}
     >
       <div
@@ -65,63 +66,15 @@ export function LoginPage() {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 28,
+          gap: 0,
           width: '100%',
-          maxWidth: 400,
-          padding: '0 24px',
+          maxWidth: 480,
+          padding: '24px 24px 0',
           animation: 'fadeIn 400ms ease',
         }}
       >
-        {/* Shield Logo + Wordmark */}
-        <div style={{ textAlign: 'center' }}>
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: '50%',
-              background: 'var(--color-navy-2)',
-              border: '2px solid var(--color-electric-blue)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 12px',
-            }}
-          >
-            <span
-              style={{
-                fontFamily: 'var(--font-sans)',
-                fontWeight: 800,
-                fontSize: 18,
-                color: 'var(--color-ion-cyan)',
-              }}
-            >
-              TA
-            </span>
-          </div>
-          <div
-            style={{
-              fontFamily: 'var(--font-sans)',
-              fontWeight: 800,
-              fontSize: 32,
-              color: '#fff',
-              letterSpacing: '-0.02em',
-              lineHeight: 1.2,
-            }}
-          >
-            Trust <span style={{ color: 'var(--color-electric-blue)' }}>Agent</span>
-          </div>
-          <div
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 13,
-              fontWeight: 400,
-              color: 'var(--color-ion-cyan)',
-              marginTop: 6,
-            }}
-          >
-            Sign in to your workspace
-          </div>
-        </div>
+        {/* Phase 15: Quote-first hero - emotional resonance before product description */}
+        <HeroSection />
 
         {/* Login form */}
         <form

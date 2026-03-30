@@ -58,6 +58,9 @@ model User {
   sharedSessionsInitiated SharedSession[] @relation("sharedSessionsInitiated")
   sharedMessagesSent   SharedMessage[]    @relation("sharedMessagesSent")
   referralRedemptions  ReferralRedemption[] @relation("referralRedemptions")
+  quizResponses        QuizResponse[]
+  companionReviews     CompanionReview[]
+  progressShares       ProgressShare[]
 
   // Push notification subscription (VAPID)
   vapidSubscription    Json?   // Web Push subscription object
@@ -79,6 +82,7 @@ enum UserPlan {
 enum AccountType {
   INDIVIDUAL
   CHILD          // Requires guardian link
+  ELDERLY        // Vulnerable adult - safeguarding applies
   ENTERPRISE
   CREATOR
 }
@@ -307,6 +311,11 @@ model Role {
   tags                String[]
   languageCode        String?
   languageName        String?
+  // Phase 0 required fields
+  systemPromptLength  Int       @default(0)  // Length of systemPrompt in chars
+  defaultCompanionName String?  // Default display name e.g. "Miss Davies"
+  shortDescription    String?   @db.Text     // Brief description for cards
+  emoji               String?               // Display emoji for category
   isActive            Boolean   @default(false)
   publishedAt         DateTime?
   isFeatured          Boolean   @default(false)
@@ -333,6 +342,7 @@ model Role {
   skills    RoleSkill[]
   creator   CreatorProfile? @relation(fields: [creatorId], references: [id])
   studyGroups StudyGroup[]
+  reAuditTriggers CompanionReAuditTrigger[]
 
   @@index([baseSlug])
   @@index([category])
@@ -442,12 +452,15 @@ model Hire {
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
 
-  sessions      AgentSession[]
-  memory        SessionMemory?
-  milestones    HireMilestone[]
-  srItems       SpacedRepetitionItem[]
-  schedules     SessionSchedule[]
-  progressReports ProgressReport[]
+  sessions            AgentSession[]
+  memory              SessionMemory?
+  milestones          HireMilestone[]
+  srItems             SpacedRepetitionItem[]
+  schedules           SessionSchedule[]
+  progressReports     ProgressReport[]
+  brainMemoryEntries  BrainMemoryEntry[]
+  companionReviews    CompanionReview[]
+  progressShares      ProgressShare[]
 
   @@unique([userId, roleId])
   @@index([userId])
@@ -1154,13 +1167,48 @@ model PriceHistory {
 // ════════════════════════════════════════════════════════════════════════════
 
 model QuizResponse {
-  id                  String   @id @default(cuid())
+  id                  String    @id @default(cuid())
   userId              String
-  answers             Json     // Structured quiz answers
-  recommendedRoleSlug String?  // AI-recommended role based on answers
-  completedAt         DateTime @default(now())
+  user                User      @relation(fields: [userId], references: [id])
+  sessionToken        String?   // For anonymous pre-auth quiz completion
+  answers             Json      // Full quiz answer payload
+  recommendedRoleSlug String?   // AI-recommended role based on answers
+  matchScore          Int       @default(0)
+  firstMessage        String?   @db.Text // Generated personalised first message (Aha Moment)
+  convertedToHire     Boolean   @default(false)
+  convertedAt         DateTime?
+  completedAt         DateTime  @default(now())
 
   @@index([userId])
+  @@index([sessionToken])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// BRAIN MEMORY ENTRIES (The Visible Brain - companion memory notes)
+// After every session the companion writes a memory note.
+// The user can see, read, and edit these - their relationship journal.
+// ════════════════════════════════════════════════════════════════════════════
+
+model BrainMemoryEntry {
+  id              String    @id @default(cuid())
+  hireId          String
+  hire            Hire      @relation(fields: [hireId], references: [id], onDelete: Cascade)
+  sessionId       String?
+  entryType       String    @default("SESSION_NOTE") // TOPIC_MASTERED | STRUGGLE_NOTED | EMOTIONAL_MOMENT | GOAL_SET | BREAKTHROUGH | PREFERENCE_LEARNED | SESSION_NOTE
+  entryDate       DateTime  @default(now())
+  content         String    @db.Text // Companion's written memory note (shown to user)
+  topicsCovered   String[]
+  nextFocus       String?   // What to address next session
+  correctRate     Float?    // e.g. 0.8 = 80% correct on exercises
+  breakthrough    String?   // Any notable moment in the session
+  userEdited      Boolean   @default(false)
+  userEditAt      DateTime?
+  userAddedNote   String?   @db.Text // User's own additions to the note
+  createdAt       DateTime  @default(now())
+
+  @@index([hireId])
+  @@index([entryDate])
+  @@index([entryType])
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -1178,4 +1226,315 @@ model Milestone {
   @@index([userId])
   @@index([hireId])
   @@index([type])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PHASE 0 REQUIRED MODELS - Added for E2E verification compliance
+// ════════════════════════════════════════════════════════════════════════════
+
+model HireMemory {
+  id          String   @id @default(cuid())
+  hireId      String
+  key         String   // memory key
+  value       String   @db.Text
+  source      String   @default("session") // session | user_edit | brain_sync
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([hireId, key])
+  @@index([hireId])
+}
+
+model AuditCheck {
+  id          String   @id @default(cuid())
+  roleAuditId String?
+  checkNumber Int
+  category    String   // stage1_automated | stage2_domain | stage3_community
+  checkName   String
+  description String   @db.Text
+  outcome     String   // PASS | FAIL | WARN | SKIP
+  details     String?  @db.Text
+  score       Int      @default(0)
+  maxScore    Int      @default(1)
+  createdAt   DateTime @default(now())
+
+  @@index([roleAuditId])
+  @@index([category])
+}
+
+model FeatureFlag {
+  id          String   @id @default(cuid())
+  key         String   @unique   // e.g. "voice_sessions" | "study_groups"
+  name        String
+  description String?
+  enabled     Boolean  @default(false)
+  percentage  Int      @default(100) // Percentage rollout
+  allowList   String[] // User IDs always included
+  denyList    String[] // User IDs always excluded
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+}
+
+model PlatformAuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  action      String   // e.g. "role.created" | "pricing.changed" | "admin.login"
+  resource    String?  // e.g. "role:gcse-maths-tutor-f"
+  details     Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model Webhook {
+  id          String   @id @default(cuid())
+  url         String
+  events      String[] // e.g. ["hire.created", "session.completed"]
+  secret      String   // HMAC secret for signature verification
+  isActive    Boolean  @default(true)
+  createdBy   String   // Admin user ID
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  deliveries  WebhookDelivery[]
+
+  @@index([isActive])
+}
+
+model WebhookDelivery {
+  id          String   @id @default(cuid())
+  webhookId   String
+  webhook     Webhook  @relation(fields: [webhookId], references: [id])
+  event       String
+  payload     Json
+  statusCode  Int?
+  response    String?  @db.Text
+  success     Boolean  @default(false)
+  attempts    Int      @default(1)
+  deliveredAt DateTime @default(now())
+
+  @@index([webhookId])
+  @@index([event])
+}
+
+model LegacyDesignation {
+  id              String   @id @default(cuid())
+  userId          String
+  recipientName   String
+  recipientEmail  String?
+  recipientPhone  String?
+  relationship    String   // spouse | child | parent | friend | solicitor
+  priority        Int      @default(1) // 1 = primary
+  activationDate  DateTime? // When to activate legacy transfer
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model StudyGroupSession {
+  id          String   @id @default(cuid())
+  groupId     String
+  topic       String?
+  scheduledAt DateTime?
+  startedAt   DateTime @default(now())
+  endedAt     DateTime?
+  duration    Int?     // seconds
+  status      String   @default("active") // active | ended | cancelled
+  createdAt   DateTime @default(now())
+
+  @@index([groupId])
+  @@index([status])
+}
+
+model NotificationContext {
+  id              String                  @id @default(cuid())
+  userId          String
+  hireId          String?
+  contextType     NotificationContextType
+  contextData     Json                    // Structured context for intelligent notifications
+  scheduledFor    DateTime                // When this notification should fire
+  sentAt          DateTime?               // When it was actually sent
+  dismissed       Boolean                 @default(false)
+  expiresAt       DateTime?
+  isActive        Boolean                 @default(true)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  @@index([userId])
+  @@index([contextType])
+  @@index([scheduledFor])
+  @@index([sentAt])
+}
+
+enum NotificationContextType {
+  EXAM_APPROACHING
+  STREAK_AT_RISK
+  STREAK_MILESTONE
+  TOPIC_DUE
+  WELLBEING_CHECK
+  MILESTONE_NEAR
+  SESSION_INSIGHT
+}
+
+model HumanFollowUpQueue {
+  id          String   @id @default(cuid())
+  userId      String
+  hireId      String?
+  reason      String   // WELLBEING_DECLINE | CRISIS_FLAG | GUARDIAN_REQUEST | ADMIN_REFERRAL | MISSED_SESSIONS
+  priority    String   @default("MEDIUM") // LOW | MEDIUM | HIGH | URGENT
+  details     String   @db.Text
+  status      String   @default("QUEUED") // QUEUED | ASSIGNED | IN_PROGRESS | RESOLVED
+  assignedTo  String?  // Staff member ID
+  assignedAt  DateTime?
+  notes       String?  @db.Text  // Staff notes during follow-up
+  resolvedAt  DateTime?
+  resolution  String?  @db.Text
+  // Phase 11: SLA tracking - URGENT=4hr, HIGH=24hr, MEDIUM=48hr
+  slaDeadline DateTime?
+  slaBreach   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([priority])
+  @@index([slaDeadline])
+}
+
+model MissionMetric {
+  id          String   @id @default(cuid())
+  userId      String?
+  hireId      String?
+  metricType  String   // lives_changed | exam_passed | wellbeing_improved | loneliness_reduced | nhs_referral | skills_learned | exams_supported
+  metricValue Float    @default(1)
+  value       Float?   // Numeric value for aggregation
+  description String?  @db.Text
+  period      String?  // daily | weekly | monthly
+  details     Json?    // Additional context
+  calculatedAt DateTime?
+  recordedAt  DateTime @default(now())
+
+  @@index([metricType])
+  @@index([recordedAt])
+  @@index([userId])
+  @@index([period])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SAFEGUARDING
+// ════════════════════════════════════════════════════════════════════════════
+
+model SafeguardingEvent {
+  id          String   @id @default(cuid())
+  userId      String
+  sessionId   String?
+  eventType   String   // DAILY_LIMIT_HIT | CURFEW_BLOCK | CONCERN_FLAGGED | GUARDIAN_ALERTED | AFTER_HOURS | HIGH_FREQUENCY | WELLBEING_CRITICAL
+  severity    String   @default("medium") // low | medium | high | critical
+  details     String?  @db.Text
+  metadata    Json?    // Additional structured data
+  resolved    Boolean  @default(false)
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([eventType])
+  @@index([severity])
+  @@index([createdAt])
+  @@index([resolved])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// COMPANION REVIEWS (Phase 6 - Social Layer)
+// ════════════════════════════════════════════════════════════════════════════
+
+model CompanionReview {
+  id          String   @id @default(cuid())
+  hireId      String
+  hire        Hire     @relation(fields: [hireId], references: [id])
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  rating      Int      // 1-5 star rating
+  reviewText  String   @db.Text
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@unique([hireId, userId])  // One review per hire per user
+  @@index([hireId])
+  @@index([userId])
+  @@index([rating])
+  @@index([createdAt])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PROGRESS SHARING (Phase 6 - Social Layer)
+// ════════════════════════════════════════════════════════════════════════════
+
+model ProgressShare {
+  id          String            @id @default(cuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id])
+  hireId      String
+  hire        Hire              @relation(fields: [hireId], references: [id])
+  shareType   ProgressShareType
+  shareData   Json              // Structured data for the share (no private info)
+  shareUrl    String            @unique  // Unique shareable URL slug
+  expiresAt   DateTime          // Auto-expire after set period
+  viewCount   Int               @default(0)
+  createdAt   DateTime          @default(now())
+
+  @@index([userId])
+  @@index([hireId])
+  @@index([shareUrl])
+  @@index([expiresAt])
+}
+
+enum ProgressShareType {
+  MILESTONE
+  STREAK
+  EXAM_RESULT
+  BRAIN_SUMMARY
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// COMPANION RE-AUDIT TRIGGERS (Phase 7 - Quality Drift Prevention)
+// ════════════════════════════════════════════════════════════════════════════
+
+model CompanionReAuditTrigger {
+  id           String              @id @default(cuid())
+  roleId       String
+  role         Role                @relation(fields: [roleId], references: [id])
+  triggerType  ReAuditTriggerType
+  triggerData  Json?               // Context: avg rating, report count, etc.
+  status       ReAuditStatus       @default(PENDING)
+  createdAt    DateTime            @default(now())
+  resolvedAt   DateTime?
+  resolvedBy   String?             // Admin user ID who resolved
+
+  @@index([roleId])
+  @@index([status])
+  @@index([triggerType])
+  @@index([createdAt])
+}
+
+enum ReAuditTriggerType {
+  LOW_RATING      // Average review rating below 3.5
+  USER_REPORT     // 3+ user reports within 30 days
+  SCHEDULED       // 6 months since last audit
+  ADMIN           // Manual admin trigger
+}
+
+enum ReAuditStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  DISMISSED
 }

@@ -1,8 +1,9 @@
 import React from 'react';
-import { FileText, Target, BookOpen, Star, Download, ChevronDown, ChevronRight } from 'lucide-react';
+import { FileText, Target, BookOpen, Star, Download, ChevronDown, ChevronRight, Brain } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export interface BrainSummary {
   userName?: string;
@@ -30,6 +31,23 @@ interface BrainViewerProps {
 
 export function BrainViewer({ summary, milestones, preferences, onExport, accentColor }: BrainViewerProps) {
   const accent = accentColor || 'var(--color-electric-blue)';
+
+  // Phase 13: Empty state when brain has no entries
+  const hasContent = summary.goals?.length || summary.topicsMastered?.length ||
+    summary.topicsInProgress?.length || summary.topicsNotStarted?.length ||
+    summary.lastSessionSummary || summary.progressPercent !== undefined;
+
+  if (!hasContent) {
+    return (
+      <div style={{ padding: 16 }}>
+        <EmptyState
+          icon={<Brain size={24} />}
+          title="Your brain is ready to learn"
+          description="After your first session, your companion will start remembering what matters to you. Goals, progress, strengths, and areas to work on will all appear here."
+        />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16, overflowY: 'auto' }}>

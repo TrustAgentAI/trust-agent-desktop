@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useScheduleStore } from '@/store/scheduleStore';
 import api from '@/lib/api';
 import {
@@ -188,6 +189,17 @@ export function SessionScheduler({
           </Button>
         )}
       </div>
+
+      {/* Phase 13: Empty state hint when no sessions scheduled */}
+      {roleSlots.length === 0 && missedSessions.length === 0 && (
+        <Card padding="16px">
+          <EmptyState
+            icon={<Calendar size={24} />}
+            title="Set up your first session"
+            description="Companions work best with regular rhythm. Tap a time slot below to schedule your first session."
+          />
+        </Card>
+      )}
 
       {/* Missed session warning */}
       {missedSessions.length > 0 && (

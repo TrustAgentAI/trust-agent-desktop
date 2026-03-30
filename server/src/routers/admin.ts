@@ -252,4 +252,226 @@ export const adminRouter = router({
       },
     };
   }),
+
+  // ── Re-Audit Trigger Management (Phase 7 - Quality Drift Prevention) ──
+
+  /**
+   * List pending re-audit triggers with role details.
+   */
+  listReAuditTriggers: adminProcedure
+    .input(
+      z.object({
+        status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'DISMISSED']).optional(),
+        page: z.number().int().min(1).default(1),
+        limit: z.number().int().min(1).max(100).default(20),
+      }).optional(),
+    )
+    .query(async ({ input, ctx }) => {
+      const page = input?.page ?? 1;
+      const limit = input?.limit ?? 20;
+      const skip = (page - 1) * limit;
+
+      const where: Record<string, unknown> = {};
+      if (input?.status) {
+        where.status = input.status;
+      }
+
+      const [triggers, total] = await Promise.all([
+        ctx.prisma.companionReAuditTrigger.findMany({
+          where,
+          include: {
+            role: {
+              select: {
+                id: true,
+                slug: true,
+                name: true,
+                companionName: true,
+                category: true,
+                isActive: true,
+                audit: {
+                  select: {
+                    trustScore: true,
+                    badge: true,
+                    completedAt: true,
+                    expiresAt: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        ctx.prisma.companionReAuditTrigger.count({ where }),
+      ]);
+
+      return {
+        triggers: triggers.map((t) => ({
+          id: t.id,
+          roleId: t.roleId,
+          roleSlug: t.role.slug,
+          roleName: t.role.name,
+          companionName: t.role.companionName,
+          category: t.role.category,
+          triggerType: t.triggerType,
+          triggerData: t.triggerData,
+          status: t.status,
+          createdAt: t.createdAt,
+          resolvedAt: t.resolvedAt,
+          resolvedBy: t.resolvedBy,
+          currentAudit: t.role.audit
+            ? {
+                trustScore: t.role.audit.trustScore,
+                badge: t.role.audit.badge,
+                completedAt: t.role.audit.completedAt,
+                expiresAt: t.role.audit.expiresAt,
+              }
+            : null,
+        })),
+        total,
+        page,
+        pages: Math.ceil(total / limit),
+      };
+    }),
+
+  /**
+   * Approve a re-audit trigger - starts the re-audit process.
+   */
+  approveReAudit: adminProcedure
+    .input(z.object({ triggerId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const trigger = await ctx.prisma.companionReAuditTrigger.findUnique({
+        where: { id: input.triggerId },
+      });
+
+      if (!trigger) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Trigger not found' });
+      }
+
+      if (trigger.status !== 'PENDING') {
+        throw new TRPCError({
+          code: 'PRECONDITION_FAILED',
+          message: `Trigger is already ${trigger.status}`,
+        });
+      }
+
+      // Update trigger to IN_PROGRESS
+      const updated = await ctx.prisma.companionReAuditTrigger.update({
+        where: { id: input.triggerId },
+        data: { status: 'IN_PROGRESS' },
+      });
+
+      // Create a new AuditJob for this role
+      await ctx.prisma.auditJob.create({
+        data: {
+          roleId: trigger.roleId,
+          submittedBy: 'system',
+          status: 'queued',
+          priority: 'normal',
+        },
+      });
+
+      return {
+        id: updated.id,
+        status: updated.status,
+        message: 'Re-audit approved and audit job queued',
+      };
+    }),
+
+  /**
+   * Dismiss a re-audit trigger with reason.
+   */
+  dismissReAudit: adminProcedure
+    .input(
+      z.object({
+        triggerId: z.string(),
+        reason: z.string().min(5).max(500).optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const trigger = await ctx.prisma.companionReAuditTrigger.findUnique({
+        where: { id: input.triggerId },
+      });
+
+      if (!trigger) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Trigger not found' });
+      }
+
+      if (trigger.status !== 'PENDING') {
+        throw new TRPCError({
+          code: 'PRECONDITION_FAILED',
+          message: `Trigger is already ${trigger.status}`,
+        });
+      }
+
+      const updated = await ctx.prisma.companionReAuditTrigger.update({
+        where: { id: input.triggerId },
+        data: {
+          status: 'DISMISSED',
+          resolvedAt: new Date(),
+          resolvedBy: 'admin',
+        },
+      });
+
+      return {
+        id: updated.id,
+        status: updated.status,
+        message: 'Re-audit trigger dismissed',
+      };
+    }),
+
+  /**
+   * Manually trigger a re-audit for any role.
+   */
+  triggerReAudit: adminProcedure
+    .input(
+      z.object({
+        roleId: z.string(),
+        reason: z.string().min(5).max(500),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const role = await ctx.prisma.role.findUnique({
+        where: { id: input.roleId },
+        select: { id: true, slug: true, name: true },
+      });
+
+      if (!role) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Role not found' });
+      }
+
+      // Check for existing pending trigger
+      const existing = await ctx.prisma.companionReAuditTrigger.findFirst({
+        where: {
+          roleId: input.roleId,
+          triggerType: 'ADMIN',
+          status: { in: ['PENDING', 'IN_PROGRESS'] },
+        },
+      });
+
+      if (existing) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: 'A pending admin re-audit trigger already exists for this role',
+        });
+      }
+
+      const trigger = await ctx.prisma.companionReAuditTrigger.create({
+        data: {
+          roleId: input.roleId,
+          triggerType: 'ADMIN',
+          triggerData: { reason: input.reason, triggeredAt: new Date().toISOString() },
+          status: 'PENDING',
+        },
+      });
+
+      return {
+        id: trigger.id,
+        roleSlug: role.slug,
+        roleName: role.name,
+        status: trigger.status,
+        message: 'Manual re-audit trigger created',
+      };
+    }),
 });

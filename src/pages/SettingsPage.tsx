@@ -1,10 +1,11 @@
 import React from 'react';
-import { Settings, Wifi, WifiOff, ExternalLink, Globe, User } from 'lucide-react';
+import { Settings, Wifi, WifiOff, ExternalLink, Globe, User, Smartphone } from 'lucide-react';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useAuthStore } from '@/store/authStore';
 import { isTauri } from '@/lib/tauri-compat';
 import { openExternal, AUTH_URLS } from '@/lib/auth';
 import { showToast } from '@/components/ui/Toast';
+import { MobileHandoffSetup } from '@/components/onboarding/MobileHandoffSetup';
 import type { LLMProvider } from '@/store/settingsStore';
 
 // ---------------------------------------------------------------------------
@@ -61,6 +62,7 @@ export function SettingsPage() {
   const auth = useAuthStore();
   const [testingConnection, setTestingConnection] = React.useState(false);
   const [connectionResult, setConnectionResult] = React.useState<string | null>(null);
+  const [showMobileSetup, setShowMobileSetup] = React.useState(false);
 
   React.useEffect(() => {
     settings.loadAll();
@@ -383,6 +385,38 @@ export function SettingsPage() {
           Voice keys are stored locally and never sent to Trust Agent servers.
         </p>
       </Section>
+
+      {/* Family Setup */}
+      <Section title="Family Setup">
+        <p
+          style={{
+            fontSize: '12px',
+            color: 'var(--color-text-muted)',
+            lineHeight: 1.6,
+            marginBottom: 12,
+          }}
+        >
+          Set up Trust Agent on a family member's phone in under 90 seconds.
+          Generates a QR code they scan for simplified, large-text onboarding.
+        </p>
+        <button
+          onClick={() => setShowMobileSetup(true)}
+          style={{
+            ...primaryBtnStyle,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          <Smartphone size={14} />
+          Set up for a family member
+        </button>
+      </Section>
+
+      {/* Mobile Handoff Modal */}
+      {showMobileSetup && (
+        <MobileHandoffSetup onClose={() => setShowMobileSetup(false)} />
+      )}
 
       {/* About */}
       <Section title="About">

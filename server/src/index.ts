@@ -194,6 +194,22 @@ const server = app.listen(PORT, async () => {
   } catch (err) {
     console.warn('Schedule checker registration skipped (Redis not available):', (err as Error).message);
   }
+
+  // Phase 4: Intelligent notification scheduler (hourly)
+  try {
+    const { registerIntelligentNotificationScheduler } = await import('./queues/intelligent-notification-scheduler');
+    await registerIntelligentNotificationScheduler();
+  } catch (err) {
+    console.warn('Intelligent notification scheduler skipped (Redis not available):', (err as Error).message);
+  }
+
+  // Phase 7: Quality drift re-audit checker (daily at 03:00 UTC)
+  try {
+    const { scheduleReauditCheck } = await import('./queues/reaudit-queue');
+    await scheduleReauditCheck();
+  } catch (err) {
+    console.warn('Re-audit checker scheduler skipped (Redis not available):', (err as Error).message);
+  }
 });
 
 // Graceful shutdown
