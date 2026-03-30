@@ -14,6 +14,7 @@ import {
 import { TitleBar } from '@/components/layout/TitleBar';
 import { ConnectionStatus } from '@/components/layout/ConnectionStatus';
 import { AgentCard } from '@/components/agent/AgentCard';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { useAgentStore } from '@/store/agentStore';
 import { useAuthStore } from '@/store/authStore';
 import type { HiredRole } from '@/store/agentStore';
@@ -285,6 +286,9 @@ export function Shell({ children }: ShellProps) {
                 {user?.plan || 'Free'} plan
               </div>
             </div>
+
+            {/* Notifications */}
+            <NotificationCenter />
 
             {/* Logout */}
             <button

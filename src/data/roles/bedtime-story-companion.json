@@ -115,5 +115,7 @@
     "children's storytelling",
     "wind down story kids",
     "age appropriate stories"
-  ]
+  ],
+  "maxDailySessionMins": 45,
+  "childSafetyRequired": true
 }

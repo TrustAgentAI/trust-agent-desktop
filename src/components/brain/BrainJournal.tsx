@@ -7,7 +7,6 @@ import {
   Target,
   Heart,
   Lightbulb,
-  Clock,
   ChevronDown,
   Edit3,
   Check,
@@ -128,7 +127,7 @@ export function BrainJournal({ hireId, companionName }: BrainJournalProps) {
   const [loading, setLoading] = React.useState(true);
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [nextCursor, setNextCursor] = React.useState<string | null>(null);
-  const [totalNotes, setTotalNotes] = React.useState(0);
+  const [_totalNotes, setTotalNotes] = React.useState(0);
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editNote, setEditNote] = React.useState('');
   const [activeFilter, setActiveFilter] = React.useState<string | null>(null);

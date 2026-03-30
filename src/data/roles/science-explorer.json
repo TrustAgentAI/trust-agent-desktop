@@ -96,11 +96,41 @@
     "submittedBy": "trust-agent-internal",
     "domainExpertRequired": "Qualified primary science teacher with DBS clearance and safeguarding training",
     "childSafetyRequired": true,
-    "regulatoryFlags": ["child-interaction", "safeguarding", "NSPCC-guidelines", "age-appropriate-content", "experiment-safety"],
+    "regulatoryFlags": [
+      "child-interaction",
+      "safeguarding",
+      "NSPCC-guidelines",
+      "age-appropriate-content",
+      "experiment-safety"
+    ],
     "expectedBadge": "PLATINUM",
     "researchCompleted": true,
     "knowledgeVerified": true
   },
-  "tags": ["science", "STEM", "children", "experiments", "curiosity", "discovery", "primary-science", "KS1", "KS2", "safeguarding"],
-  "searchKeywords": ["children science companion", "STEM for kids", "science experiments children", "KS2 science", "primary school science", "safe experiments at home", "children curiosity science", "science explorer kids", "age appropriate science", "hands on science children"]
+  "tags": [
+    "science",
+    "STEM",
+    "children",
+    "experiments",
+    "curiosity",
+    "discovery",
+    "primary-science",
+    "KS1",
+    "KS2",
+    "safeguarding"
+  ],
+  "searchKeywords": [
+    "children science companion",
+    "STEM for kids",
+    "science experiments children",
+    "KS2 science",
+    "primary school science",
+    "safe experiments at home",
+    "children curiosity science",
+    "science explorer kids",
+    "age appropriate science",
+    "hands on science children"
+  ],
+  "maxDailySessionMins": 45,
+  "childSafetyRequired": true
 }

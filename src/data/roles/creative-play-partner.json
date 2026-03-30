@@ -123,5 +123,6 @@
     "craft activities kids",
     "children poetry",
     "creative companion kids"
-  ]
+  ],
+  "childSafetyRequired": true
 }

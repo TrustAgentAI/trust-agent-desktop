@@ -45,14 +45,54 @@
     "Child asks questions about sensitive topics beyond the scope of homework help - redirect to a trusted adult"
   ],
   "skills": [
-    {"skillSlug": "adaptive-learning", "skillName": "Adaptive Learning", "injectionPoint": "system", "priority": 1},
-    {"skillSlug": "safeguarding", "skillName": "Safeguarding", "injectionPoint": "system", "priority": 2},
-    {"skillSlug": "memory-persistence", "skillName": "Memory Persistence", "injectionPoint": "system", "priority": 3},
-    {"skillSlug": "progress-tracking", "skillName": "Progress Tracking", "injectionPoint": "system", "priority": 4},
-    {"skillSlug": "voice-optimised", "skillName": "Voice Optimised", "injectionPoint": "system", "priority": 5},
-    {"skillSlug": "conversational-memory", "skillName": "Conversational Memory", "injectionPoint": "system", "priority": 6},
-    {"skillSlug": "emotional-support", "skillName": "Emotional Support", "injectionPoint": "system", "priority": 7},
-    {"skillSlug": "socratic-method", "skillName": "Socratic Method", "injectionPoint": "system", "priority": 8}
+    {
+      "skillSlug": "adaptive-learning",
+      "skillName": "Adaptive Learning",
+      "injectionPoint": "system",
+      "priority": 1
+    },
+    {
+      "skillSlug": "safeguarding",
+      "skillName": "Safeguarding",
+      "injectionPoint": "system",
+      "priority": 2
+    },
+    {
+      "skillSlug": "memory-persistence",
+      "skillName": "Memory Persistence",
+      "injectionPoint": "system",
+      "priority": 3
+    },
+    {
+      "skillSlug": "progress-tracking",
+      "skillName": "Progress Tracking",
+      "injectionPoint": "system",
+      "priority": 4
+    },
+    {
+      "skillSlug": "voice-optimised",
+      "skillName": "Voice Optimised",
+      "injectionPoint": "system",
+      "priority": 5
+    },
+    {
+      "skillSlug": "conversational-memory",
+      "skillName": "Conversational Memory",
+      "injectionPoint": "system",
+      "priority": 6
+    },
+    {
+      "skillSlug": "emotional-support",
+      "skillName": "Emotional Support",
+      "injectionPoint": "system",
+      "priority": 7
+    },
+    {
+      "skillSlug": "socratic-method",
+      "skillName": "Socratic Method",
+      "injectionPoint": "system",
+      "priority": 8
+    }
   ],
   "knowledgeSources": [
     "https://www.gov.uk/government/collections/national-curriculum",
@@ -65,11 +105,42 @@
     "submittedBy": "trust-agent-internal",
     "domainExpertRequired": "Qualified primary school teacher with KS2 experience",
     "childSafetyRequired": true,
-    "regulatoryFlags": ["education", "UK-curriculum", "children-under-13", "safeguarding-required"],
+    "regulatoryFlags": [
+      "education",
+      "UK-curriculum",
+      "children-under-13",
+      "safeguarding-required"
+    ],
     "expectedBadge": "PLATINUM",
     "researchCompleted": true,
     "knowledgeVerified": true
   },
-  "tags": ["primary", "KS2", "homework", "maths", "english", "science", "SATs", "children", "Year-3", "Year-4", "Year-5", "Year-6"],
-  "searchKeywords": ["primary homework help", "KS2", "SATs", "primary maths", "primary English", "primary science", "Year 6", "homework helper", "times tables", "primary school tutor"]
+  "tags": [
+    "primary",
+    "KS2",
+    "homework",
+    "maths",
+    "english",
+    "science",
+    "SATs",
+    "children",
+    "Year-3",
+    "Year-4",
+    "Year-5",
+    "Year-6"
+  ],
+  "searchKeywords": [
+    "primary homework help",
+    "KS2",
+    "SATs",
+    "primary maths",
+    "primary English",
+    "primary science",
+    "Year 6",
+    "homework helper",
+    "times tables",
+    "primary school tutor"
+  ],
+  "maxDailySessionMins": 45,
+  "childSafetyRequired": true
 }

@@ -295,7 +295,7 @@ function FollowUpCard({
               {REASON_LABELS[entry.reason] || entry.reason}
             </span>
             <Badge
-              variant={entry.priority === 'URGENT' ? 'destructive' : 'default'}
+              variant={entry.priority === 'URGENT' ? 'error' : 'default'}
               size="sm"
             >
               {entry.priority}

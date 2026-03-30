@@ -1,6 +1,6 @@
 import React from 'react';
 import { QrCode, Smartphone, CheckCircle, Clock, RefreshCw, Copy, ArrowRight } from 'lucide-react';
-import { buildSetupPayload, buildSetupUrl, isTokenExpired, type SetupToken } from '@/lib/setup-token';
+import { buildSetupPayload, isTokenExpired, type SetupToken } from '@/lib/setup-token';
 import { useAuthStore } from '@/store/authStore';
 import { showToast } from '@/components/ui/Toast';
 
@@ -15,7 +15,6 @@ export function MobileHandoffSetup({ onClose }: { onClose: () => void }) {
   const auth = useAuthStore();
   const [step, setStep] = React.useState<SetupStep>('generate');
   const [token, setToken] = React.useState<SetupToken | null>(null);
-  const [qrUrl, setQrUrl] = React.useState('');
   const [familyName, setFamilyName] = React.useState('');
   const timerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -23,9 +22,7 @@ export function MobileHandoffSetup({ onClose }: { onClose: () => void }) {
 
   const handleGenerate = () => {
     const payload = buildSetupPayload({ userName });
-    const url = buildSetupUrl(payload);
     setToken(payload);
-    setQrUrl(url);
     setStep('scanning');
 
     // Poll for connection (simulated - in production this would poll the API)
@@ -136,6 +133,20 @@ export function MobileHandoffSetup({ onClose }: { onClose: () => void }) {
               <button onClick={handleSimulateConnect} style={primaryBtnStyle}>
                 <CheckCircle size={14} /> Confirm connected
               </button>
+            </div>
+
+            {/* Family member name */}
+            <div style={{ marginTop: 16, textAlign: 'left' }}>
+              <label style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                Family member's name (optional)
+              </label>
+              <input
+                type="text"
+                value={familyName}
+                onChange={(e) => setFamilyName(e.target.value)}
+                placeholder="e.g. Mum, Dad, Nan"
+                style={{ ...instructionsBoxStyle, width: '100%', padding: '8px 12px', marginTop: 4, border: '1px solid var(--color-border)', color: '#E8EDF5', fontSize: 13 }}
+              />
             </div>
 
             {/* Instructions */}

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Shield, AlertTriangle, CheckCircle, Download, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
-import api from '@/lib/api';
 
 interface SafeguardingEvent {
   id: string;

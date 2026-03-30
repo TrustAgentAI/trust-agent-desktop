@@ -45,13 +45,48 @@
     "Child is significantly behind expected reading level for their age - recommend school intervention and potential assessment"
   ],
   "skills": [
-    {"skillSlug": "adaptive-learning", "skillName": "Adaptive Learning", "injectionPoint": "system", "priority": 1},
-    {"skillSlug": "safeguarding", "skillName": "Safeguarding", "injectionPoint": "system", "priority": 2},
-    {"skillSlug": "memory-persistence", "skillName": "Memory Persistence", "injectionPoint": "system", "priority": 3},
-    {"skillSlug": "progress-tracking", "skillName": "Progress Tracking", "injectionPoint": "system", "priority": 4},
-    {"skillSlug": "voice-optimised", "skillName": "Voice Optimised", "injectionPoint": "system", "priority": 5},
-    {"skillSlug": "conversational-memory", "skillName": "Conversational Memory", "injectionPoint": "system", "priority": 6},
-    {"skillSlug": "emotional-support", "skillName": "Emotional Support", "injectionPoint": "system", "priority": 7}
+    {
+      "skillSlug": "adaptive-learning",
+      "skillName": "Adaptive Learning",
+      "injectionPoint": "system",
+      "priority": 1
+    },
+    {
+      "skillSlug": "safeguarding",
+      "skillName": "Safeguarding",
+      "injectionPoint": "system",
+      "priority": 2
+    },
+    {
+      "skillSlug": "memory-persistence",
+      "skillName": "Memory Persistence",
+      "injectionPoint": "system",
+      "priority": 3
+    },
+    {
+      "skillSlug": "progress-tracking",
+      "skillName": "Progress Tracking",
+      "injectionPoint": "system",
+      "priority": 4
+    },
+    {
+      "skillSlug": "voice-optimised",
+      "skillName": "Voice Optimised",
+      "injectionPoint": "system",
+      "priority": 5
+    },
+    {
+      "skillSlug": "conversational-memory",
+      "skillName": "Conversational Memory",
+      "injectionPoint": "system",
+      "priority": 6
+    },
+    {
+      "skillSlug": "emotional-support",
+      "skillName": "Emotional Support",
+      "injectionPoint": "system",
+      "priority": 7
+    }
   ],
   "knowledgeSources": [
     "https://assets.publishing.service.gov.uk/media/5a7aa7b6e5274a34770e630c/Letters_and_Sounds_-_DFES-00281-2007.pdf",
@@ -64,11 +99,41 @@
     "submittedBy": "trust-agent-internal",
     "domainExpertRequired": "Qualified primary school teacher with phonics teaching expertise",
     "childSafetyRequired": true,
-    "regulatoryFlags": ["education", "UK-curriculum", "children-under-13", "safeguarding-required"],
+    "regulatoryFlags": [
+      "education",
+      "UK-curriculum",
+      "children-under-13",
+      "safeguarding-required"
+    ],
     "expectedBadge": "PLATINUM",
     "researchCompleted": true,
     "knowledgeVerified": true
   },
-  "tags": ["phonics", "reading", "primary", "Letters-and-Sounds", "SSP", "44-phonemes", "reception", "Year-1", "Year-2", "Phonics-Screening-Check", "children"],
-  "searchKeywords": ["phonics tutor", "reading coach", "learn to read", "phonics phases", "Letters and Sounds", "phonics screening check", "primary reading", "systematic synthetic phonics", "decodable books", "tricky words"]
+  "tags": [
+    "phonics",
+    "reading",
+    "primary",
+    "Letters-and-Sounds",
+    "SSP",
+    "44-phonemes",
+    "reception",
+    "Year-1",
+    "Year-2",
+    "Phonics-Screening-Check",
+    "children"
+  ],
+  "searchKeywords": [
+    "phonics tutor",
+    "reading coach",
+    "learn to read",
+    "phonics phases",
+    "Letters and Sounds",
+    "phonics screening check",
+    "primary reading",
+    "systematic synthetic phonics",
+    "decodable books",
+    "tricky words"
+  ],
+  "maxDailySessionMins": 45,
+  "childSafetyRequired": true
 }

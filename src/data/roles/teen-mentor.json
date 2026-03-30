@@ -103,11 +103,48 @@
     "submittedBy": "trust-agent-internal",
     "domainExpertRequired": "Qualified youth worker or school counsellor with DBS clearance, Level 3 safeguarding training, and experience working with 13-18 year olds in pastoral or mentoring capacity",
     "childSafetyRequired": true,
-    "regulatoryFlags": ["child-interaction", "safeguarding", "KCSIE-2024", "crisis-escalation", "mental-health-signposting", "UK-childrens-code", "online-safety"],
+    "regulatoryFlags": [
+      "child-interaction",
+      "safeguarding",
+      "KCSIE-2024",
+      "crisis-escalation",
+      "mental-health-signposting",
+      "UK-childrens-code",
+      "online-safety"
+    ],
     "expectedBadge": "PLATINUM",
     "researchCompleted": true,
     "knowledgeVerified": true
   },
-  "tags": ["teen-mentor", "adolescent", "exam-stress", "social-media", "identity", "peer-pressure", "safeguarding", "youth", "GCSE", "A-Level", "mental-health", "future-planning"],
-  "searchKeywords": ["teen mentor", "teenage support", "exam stress help", "social media safety teens", "peer pressure", "teen identity", "GCSE stress", "A-Level help", "teen anxiety", "youth mentor", "teenage wellbeing", "career advice teens", "teen counselling alternative", "teen mental health"]
+  "tags": [
+    "teen-mentor",
+    "adolescent",
+    "exam-stress",
+    "social-media",
+    "identity",
+    "peer-pressure",
+    "safeguarding",
+    "youth",
+    "GCSE",
+    "A-Level",
+    "mental-health",
+    "future-planning"
+  ],
+  "searchKeywords": [
+    "teen mentor",
+    "teenage support",
+    "exam stress help",
+    "social media safety teens",
+    "peer pressure",
+    "teen identity",
+    "GCSE stress",
+    "A-Level help",
+    "teen anxiety",
+    "youth mentor",
+    "teenage wellbeing",
+    "career advice teens",
+    "teen counselling alternative",
+    "teen mental health"
+  ],
+  "childSafetyRequired": true
 }

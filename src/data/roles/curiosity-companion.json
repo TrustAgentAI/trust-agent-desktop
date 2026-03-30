@@ -122,5 +122,6 @@
     "STEM curiosity",
     "children discovery",
     "wonder science kids"
-  ]
+  ],
+  "childSafetyRequired": true
 }

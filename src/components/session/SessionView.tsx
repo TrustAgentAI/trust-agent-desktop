@@ -103,6 +103,35 @@ export function SessionView({
     sessionMood: 'focused',
   };
 
+  // Aha Moment: Inject the personalised first message from onboarding quiz
+  // This runs once when a session starts with a hire that has a stored first message
+  React.useEffect(() => {
+    if (!activeRoleId || messages.length > 0) return;
+
+    try {
+      const storedMessage = localStorage.getItem('ta_first_message');
+      const storedRoleId = localStorage.getItem('ta_first_message_role');
+
+      if (storedMessage && storedRoleId) {
+        // Inject the Aha Moment first message as the companion's opening
+        const ahaMessage: ChatMessageData = {
+          id: `aha-${Date.now()}`,
+          role: 'agent',
+          content: storedMessage,
+          timestamp: Date.now(),
+          metadata: { isAhaMoment: true },
+        };
+        addMessage(activeRoleId, ahaMessage);
+
+        // Clear stored first message so it only fires once
+        localStorage.removeItem('ta_first_message');
+        localStorage.removeItem('ta_first_message_role');
+      }
+    } catch {
+      // Storage access may fail
+    }
+  }, [activeRoleId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Session timer with anti-dependency checks
   React.useEffect(() => {
     const interval = setInterval(() => {

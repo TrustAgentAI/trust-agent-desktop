@@ -3,6 +3,7 @@ import { Shield, CheckCircle, Zap, ArrowLeft, Calendar, Eye } from 'lucide-react
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
+import { RolePricingComparison } from './PricingComparison';
 
 export interface RoleDetailData {
   id: string;
@@ -38,6 +39,7 @@ interface RoleDetailProps {
   onHire: (roleId: string) => void;
   onBack: () => void;
   isHired?: boolean;
+  onViewAudit?: (roleId: string) => void;
 }
 
 const BADGE_VARIANT: Record<string, 'platinum' | 'gold' | 'silver' | 'basic'> = {
@@ -53,7 +55,7 @@ function formatPrice(pence: number): string {
   return `\u00A3${pounds}/mo`;
 }
 
-export function RoleDetail({ role, onHire, onBack, isHired }: RoleDetailProps) {
+export function RoleDetail({ role, onHire, onBack, isHired, onViewAudit }: RoleDetailProps) {
   const accent = role.accentColor || role.environmentConfig?.categoryAccentColor || 'var(--color-electric-blue)';
 
   return (
@@ -210,6 +212,9 @@ export function RoleDetail({ role, onHire, onBack, isHired }: RoleDetailProps) {
             </div>
           </Card>
 
+          {/* Phase 12.2: Pricing comparison card */}
+          <RolePricingComparison category={role.category} />
+
           {/* Capabilities */}
           <Card padding="16px">
             <SectionTitle>Capabilities</SectionTitle>
@@ -285,6 +290,31 @@ export function RoleDetail({ role, onHire, onBack, isHired }: RoleDetailProps) {
                   </div>
                 </div>
               </div>
+              {onViewAudit && (
+                <button
+                  onClick={() => onViewAudit(role.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    width: '100%',
+                    padding: '10px 12px',
+                    marginTop: 4,
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-sm)',
+                    color: 'var(--color-electric-blue)',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    fontFamily: 'var(--font-sans)',
+                    cursor: 'pointer',
+                    transition: 'background 0.15s ease',
+                  }}
+                >
+                  <Eye size={14} />
+                  View full audit - all 47 checks
+                </button>
+              )}
             </Card>
           )}
 

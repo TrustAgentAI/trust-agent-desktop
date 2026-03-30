@@ -20,7 +20,6 @@ import {
   Lock,
   Calendar,
   Hash,
-  Award,
   BarChart3,
   User,
 } from 'lucide-react';

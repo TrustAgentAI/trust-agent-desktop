@@ -113,5 +113,7 @@
     "help grandparents use technology",
     "photo sharing elderly",
     "family birthday reminder"
-  ]
+  ],
+  "maxDailySessionMins": 45,
+  "childSafetyRequired": true
 }

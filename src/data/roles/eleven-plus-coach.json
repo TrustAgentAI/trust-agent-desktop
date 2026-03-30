@@ -45,14 +45,54 @@
     "Family needs advice on school choices or the grammar school system - recommend their local authority admissions service"
   ],
   "skills": [
-    {"skillSlug": "adaptive-learning", "skillName": "Adaptive Learning", "injectionPoint": "system", "priority": 1},
-    {"skillSlug": "memory-persistence", "skillName": "Memory Persistence", "injectionPoint": "system", "priority": 2},
-    {"skillSlug": "progress-tracking", "skillName": "Progress Tracking", "injectionPoint": "system", "priority": 3},
-    {"skillSlug": "safeguarding", "skillName": "Safeguarding", "injectionPoint": "system", "priority": 4},
-    {"skillSlug": "voice-optimised", "skillName": "Voice Optimised", "injectionPoint": "system", "priority": 5},
-    {"skillSlug": "conversational-memory", "skillName": "Conversational Memory", "injectionPoint": "system", "priority": 6},
-    {"skillSlug": "emotional-support", "skillName": "Emotional Support", "injectionPoint": "system", "priority": 7},
-    {"skillSlug": "socratic-method", "skillName": "Socratic Method", "injectionPoint": "system", "priority": 8}
+    {
+      "skillSlug": "adaptive-learning",
+      "skillName": "Adaptive Learning",
+      "injectionPoint": "system",
+      "priority": 1
+    },
+    {
+      "skillSlug": "memory-persistence",
+      "skillName": "Memory Persistence",
+      "injectionPoint": "system",
+      "priority": 2
+    },
+    {
+      "skillSlug": "progress-tracking",
+      "skillName": "Progress Tracking",
+      "injectionPoint": "system",
+      "priority": 3
+    },
+    {
+      "skillSlug": "safeguarding",
+      "skillName": "Safeguarding",
+      "injectionPoint": "system",
+      "priority": 4
+    },
+    {
+      "skillSlug": "voice-optimised",
+      "skillName": "Voice Optimised",
+      "injectionPoint": "system",
+      "priority": 5
+    },
+    {
+      "skillSlug": "conversational-memory",
+      "skillName": "Conversational Memory",
+      "injectionPoint": "system",
+      "priority": 6
+    },
+    {
+      "skillSlug": "emotional-support",
+      "skillName": "Emotional Support",
+      "injectionPoint": "system",
+      "priority": 7
+    },
+    {
+      "skillSlug": "socratic-method",
+      "skillName": "Socratic Method",
+      "injectionPoint": "system",
+      "priority": 8
+    }
   ],
   "knowledgeSources": [
     "https://www.bond11plus.co.uk/11-plus-cem-gl",
@@ -65,11 +105,39 @@
     "submittedBy": "trust-agent-internal",
     "domainExpertRequired": "Experienced 11+ tutor with knowledge of both CEM and GL formats",
     "childSafetyRequired": true,
-    "regulatoryFlags": ["education", "UK-curriculum", "children-under-13", "safeguarding-required"],
+    "regulatoryFlags": [
+      "education",
+      "UK-curriculum",
+      "children-under-13",
+      "safeguarding-required"
+    ],
     "expectedBadge": "PLATINUM",
     "researchCompleted": true,
     "knowledgeVerified": true
   },
-  "tags": ["11-plus", "grammar-school", "CEM", "GL-Assessment", "verbal-reasoning", "non-verbal-reasoning", "primary", "entrance-exam", "children"],
-  "searchKeywords": ["11 plus tutor", "11+ exam", "grammar school", "CEM", "GL Assessment", "verbal reasoning", "non-verbal reasoning", "eleven plus", "grammar school entrance", "11 plus preparation"]
+  "tags": [
+    "11-plus",
+    "grammar-school",
+    "CEM",
+    "GL-Assessment",
+    "verbal-reasoning",
+    "non-verbal-reasoning",
+    "primary",
+    "entrance-exam",
+    "children"
+  ],
+  "searchKeywords": [
+    "11 plus tutor",
+    "11+ exam",
+    "grammar school",
+    "CEM",
+    "GL Assessment",
+    "verbal reasoning",
+    "non-verbal reasoning",
+    "eleven plus",
+    "grammar school entrance",
+    "11 plus preparation"
+  ],
+  "maxDailySessionMins": 45,
+  "childSafetyRequired": true
 }

@@ -85,12 +85,14 @@ export function setupTokenStreaming(
   onToken: (token: string) => void,
   onDone: (fullContent: string) => void,
 ): () => void {
-  const tokenHandler = (data: { token: string }) => {
-    onToken(data.token);
+  const tokenHandler = (data: unknown) => {
+    const d = data as { token: string };
+    if (d?.token) onToken(d.token);
   };
 
-  const doneHandler = (data: { content: string }) => {
-    onDone(data.content);
+  const doneHandler = (data: unknown) => {
+    const d = data as { content: string };
+    if (d?.content) onDone(d.content);
   };
 
   wsClient.on('agent:token', tokenHandler);

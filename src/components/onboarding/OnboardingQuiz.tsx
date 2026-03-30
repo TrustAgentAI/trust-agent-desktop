@@ -690,6 +690,41 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
               </div>
             </Card>
 
+            {/* Aha Moment preview - show the personalised first message */}
+            {firstMessage && (
+              <Card padding="16px" style={{ textAlign: 'left', marginBottom: 16, borderLeft: '3px solid var(--color-electric-blue)' }}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: 'var(--color-electric-blue)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    marginBottom: 8,
+                    fontFamily: 'var(--font-mono)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <Sparkles size={12} />
+                  First message preview
+                </div>
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: '#C8D0DC',
+                    fontFamily: 'var(--font-sans)',
+                    lineHeight: 1.6,
+                    margin: 0,
+                    fontStyle: 'italic',
+                  }}
+                >
+                  "{firstMessage}"
+                </p>
+              </Card>
+            )}
+
             {audience === 'child' && (
               <div
                 style={{

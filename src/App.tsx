@@ -12,7 +12,12 @@ import { StudyGroupList } from '@/components/study/StudyGroupList';
 import { StudyGroupDetail } from '@/components/study/StudyGroupDetail';
 import { SharedSessionView } from '@/components/study/SharedSessionView';
 import { GuardianDashboardPage } from '@/pages/GuardianDashboardPage';
+import { HumanFollowUpQueue } from '@/components/admin/HumanFollowUpQueue';
 import { OnboardingQuiz, type QuizAnswers } from '@/components/onboarding/OnboardingQuiz';
+import { AuditDetailPage } from '@/pages/AuditDetailPage';
+import { SafeguardingDashboardPage } from '@/pages/SafeguardingDashboardPage';
+import { ImpactPage } from '@/pages/ImpactPage';
+import { BrainJournalPage } from '@/pages/BrainJournalPage';
 
 // Wire gateway to use JWT from auth store
 configureGateway({
@@ -70,6 +75,20 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
 
   const handleQuizComplete = (answers: QuizAnswers) => {
     setShowQuiz(false);
+    // Store the Aha Moment first message for the first session
+    if (answers.firstMessage) {
+      try {
+        localStorage.setItem('ta_first_message', answers.firstMessage);
+        localStorage.setItem('ta_first_message_role', answers.recommendedRoleId);
+      } catch {
+        // Storage might be blocked
+      }
+    }
+    try {
+      localStorage.setItem('ta_onboarding_completed', 'true');
+    } catch {
+      // Storage might be blocked
+    }
     // Navigate to marketplace to hire the recommended role
     window.location.hash = `/marketplace?recommended=${answers.recommendedRoleId}`;
   };
@@ -161,6 +180,50 @@ function App() {
             element={
               <Shell>
                 <GuardianDashboardPage />
+              </Shell>
+            }
+          />
+          <Route
+            path="/audit/:roleId"
+            element={
+              <Shell>
+                <AuditDetailPage />
+              </Shell>
+            }
+          />
+          <Route
+            path="/safeguarding"
+            element={
+              <Shell>
+                <SafeguardingDashboardPage />
+              </Shell>
+            }
+          />
+          <Route
+            path="/impact"
+            element={
+              <Shell>
+                <ImpactPage />
+              </Shell>
+            }
+          />
+          {/* Phase 11.3: Admin follow-up queue */}
+          <Route
+            path="/admin/follow-ups"
+            element={
+              <Shell>
+                <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+                  <HumanFollowUpQueue />
+                </div>
+              </Shell>
+            }
+          />
+          {/* Visible Brain - companion relationship journal */}
+          <Route
+            path="/brain/:hireId"
+            element={
+              <Shell>
+                <BrainJournalPage />
               </Shell>
             }
           />
