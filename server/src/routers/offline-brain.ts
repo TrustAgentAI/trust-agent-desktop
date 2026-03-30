@@ -163,7 +163,7 @@ export const offlineBrainRouter = router({
           z.object({
             type: z.enum(['spaced_rep_review', 'session_note']),
             hireId: z.string(),
-            data: z.record(z.any()),
+            data: z.record(z.string(), z.any()),
             timestamp: z.string().datetime(),
           })
         ),

@@ -26,7 +26,6 @@ function generateICSContent(schedule: {
   const byDay = schedule.dayOfWeek.map((d) => dayMap[d]).join(',');
 
   // Calculate DTSTART from the next occurrence
-  const now = new Date();
   const startDate = getNextOccurrence(schedule.dayOfWeek, hours, minutes, schedule.timezone);
   const endDate = new Date(startDate.getTime() + schedule.durationMins * 60 * 1000);
 

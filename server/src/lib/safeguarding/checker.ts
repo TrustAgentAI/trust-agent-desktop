@@ -7,7 +7,6 @@
  *   - Alerts guardian on any concern
  */
 
-import { TRPCError } from '@trpc/server';
 import type { PrismaClient } from '@prisma/client';
 import { addNotificationJob } from '../../queues/notification-queue';
 
@@ -120,7 +119,7 @@ export async function logSafeguardingEvent(
       eventType: data.eventType,
       severity: data.severity,
       details: data.details,
-      metadata: data.metadata ?? undefined,
+      metadata: (data.metadata as object) ?? undefined,
     },
   });
 }

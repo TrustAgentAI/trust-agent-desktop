@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { TRPCError } from '@trpc/server';
 import { router, publicProcedure } from '../trpc';
 import { safeRoleSelect } from '../lib/safe-role';
 

@@ -24,9 +24,9 @@ function endOfWeek(date: Date): Date {
 
 export async function generateSchoolLeaderboard(schoolId: string): Promise<void> {
   const enrolments = await prisma.studentEnrolment.findMany({
-    where: { schoolLicenceId: schoolId, isActive: true },
+    where: { licenceId: schoolId },
     include: {
-      student: {
+      user: {
         include: {
           hires: {
             where: { status: 'ACTIVE' },
@@ -45,9 +45,9 @@ export async function generateSchoolLeaderboard(schoolId: string): Promise<void>
   // Build anonymised entries - no names, no IDs, just rank + streak + subject
   const entries = enrolments
     .map(e => ({
-      streakDays: e.student.hires[0]?.streakDays ?? 0,
-      subjectEmoji: e.student.hires[0]?.role.emoji ?? '',
-      category: e.student.hires[0]?.role.category ?? 'education',
+      streakDays: e.user.hires[0]?.streakDays ?? 0,
+      subjectEmoji: e.user.hires[0]?.role.emoji ?? '',
+      category: e.user.hires[0]?.role.category ?? 'education',
     }))
     .sort((a, b) => b.streakDays - a.streakDays)
     .map((e, i) => ({

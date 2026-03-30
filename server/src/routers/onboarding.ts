@@ -264,7 +264,7 @@ export const onboardingRouter = router({
       recommendedSlug: z.string().optional(),
       device: z.string().optional(),
       referralSource: z.string().optional(),
-      quizAnswers: z.record(z.unknown()).optional(),
+      quizAnswers: z.record(z.string(), z.unknown()).optional(),
     }))
     .mutation(async ({ input }) => {
       await trackCheckpoint(input.step as Parameters<typeof trackCheckpoint>[0], {

@@ -4,7 +4,7 @@ import { router, protectedProcedure, adminProcedure } from '../trpc';
 import Stripe from 'stripe';
 
 const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-04-10' })
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-03-25.dahlia' })
   : null;
 
 export const schoolRouter = router({
@@ -52,6 +52,12 @@ export const schoolRouter = router({
             metadata: { type: 'school_licence' },
           });
 
+          // Create a product first, then use its ID in price_data
+          const product = await stripe.products.create({
+            name: `Trust Agent School Licence - ${input.schoolName}`,
+            metadata: { type: 'school_licence', schoolName: input.schoolName },
+          });
+
           const subscription = await stripe.subscriptions.create({
             customer: customer.id,
             items: [{
@@ -59,9 +65,7 @@ export const schoolRouter = router({
                 currency: 'gbp',
                 unit_amount: input.pricePerStudent,
                 recurring: { interval: 'month' },
-                product_data: {
-                  name: `Trust Agent School Licence - ${input.schoolName}`,
-                },
+                product: product.id,
               },
               quantity: input.maxStudents,
             }],
@@ -367,7 +371,7 @@ export const schoolRouter = router({
   // Admin: generate leaderboard for a school
   generateLeaderboard: adminProcedure
     .input(z.object({ schoolId: z.string() }))
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async ({ input }) => {
       const { generateSchoolLeaderboard } = await import('../lib/schools/generateLeaderboard');
       await generateSchoolLeaderboard(input.schoolId);
       return { success: true };

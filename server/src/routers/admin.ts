@@ -204,7 +204,7 @@ export const adminRouter = router({
           tierId: input.tierId,
           oldPrice: existing.priceGBP,
           newPrice: input.priceGBP,
-          changedBy: ctx.session.userId,
+          changedBy: ctx.user?.id ?? 'admin',
           note: input.note,
         },
       });
@@ -215,7 +215,7 @@ export const adminRouter = router({
         data: {
           pricePreviousGBP: existing.priceGBP,
           priceGBP: input.priceGBP,
-          changedBy: ctx.session.userId,
+          changedBy: ctx.user?.id ?? 'admin',
         },
       });
 

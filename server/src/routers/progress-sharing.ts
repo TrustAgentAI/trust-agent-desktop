@@ -74,7 +74,7 @@ export const progressSharingRouter = router({
           userId: ctx.user.id,
           hireId: input.hireId,
           shareType: input.shareType,
-          shareData,
+          shareData: shareData as object,
           shareUrl,
           expiresAt,
         },

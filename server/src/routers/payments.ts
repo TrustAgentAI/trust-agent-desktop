@@ -2,10 +2,8 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import Stripe from 'stripe';
-import { PLAN_LIMITS } from '../lib/plan-limits';
-
 const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-04-10' })
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-03-25.dahlia' })
   : null;
 
 const PLAN_PRICE_IDS: Record<string, string> = {
@@ -30,6 +28,10 @@ export const paymentsRouter = router({
       const existingSub = await ctx.prisma.subscription.findUnique({
         where: { userId: ctx.user.id },
       });
+
+      if (!stripe) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Payment service unavailable' });
+      }
 
       if (existingSub?.stripeCustomerId) {
         stripeCustomerId = existingSub.stripeCustomerId;
@@ -65,6 +67,10 @@ export const paymentsRouter = router({
   handleWebhook: publicProcedure
     .input(z.object({ rawBody: z.string(), signature: z.string() }))
     .mutation(async ({ input, ctx }) => {
+      if (!stripe) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Payment service unavailable' });
+      }
+
       let event: Stripe.Event;
       try {
         event = stripe.webhooks.constructEvent(
@@ -84,6 +90,9 @@ export const paymentsRouter = router({
           if (!userId || !plan) break;
 
           const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+          const subAny = subscription as unknown as Record<string, unknown>;
+          const periodStart = (subAny.current_period_start as number) || subscription.start_date || Math.floor(Date.now() / 1000);
+          const periodEnd = (subAny.current_period_end as number) || (periodStart + 30 * 24 * 60 * 60);
 
           await ctx.prisma.subscription.upsert({
             where: { userId },
@@ -93,15 +102,15 @@ export const paymentsRouter = router({
               stripeCustomerId: session.customer as string,
               plan: plan as 'STARTER' | 'ESSENTIAL' | 'FAMILY' | 'PROFESSIONAL',
               status: 'ACTIVE',
-              currentPeriodStart: new Date(subscription.current_period_start * 1000),
-              currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+              currentPeriodStart: new Date(periodStart * 1000),
+              currentPeriodEnd: new Date(periodEnd * 1000),
             },
             update: {
               stripeSubId: subscription.id,
               plan: plan as 'STARTER' | 'ESSENTIAL' | 'FAMILY' | 'PROFESSIONAL',
               status: 'ACTIVE',
-              currentPeriodStart: new Date(subscription.current_period_start * 1000),
-              currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+              currentPeriodStart: new Date(periodStart * 1000),
+              currentPeriodEnd: new Date(periodEnd * 1000),
             },
           });
 
@@ -113,8 +122,8 @@ export const paymentsRouter = router({
         }
 
         case 'invoice.payment_succeeded': {
-          const invoice = event.data.object as Stripe.Invoice;
-          const subId = invoice.subscription as string;
+          const invoiceData = event.data.object as unknown as Record<string, unknown>;
+          const subId = (invoiceData.subscription as string) || '';
           if (subId) {
             await ctx.prisma.subscription.updateMany({
               where: { stripeSubId: subId },
@@ -128,9 +137,9 @@ export const paymentsRouter = router({
             await ctx.prisma.payment.create({
               data: {
                 userId: sub.userId,
-                stripePaymentId: invoice.payment_intent as string,
-                amount: invoice.amount_paid,
-                currency: invoice.currency,
+                stripePaymentId: (invoiceData.payment_intent as string) || '',
+                amount: (invoiceData.amount_paid as number) || 0,
+                currency: (invoiceData.currency as string) || 'gbp',
                 status: 'succeeded',
                 type: 'subscription',
                 description: `${sub.plan} subscription payment`,
@@ -141,8 +150,8 @@ export const paymentsRouter = router({
         }
 
         case 'invoice.payment_failed': {
-          const invoice = event.data.object as Stripe.Invoice;
-          const subId = invoice.subscription as string;
+          const failedInvoiceData = event.data.object as unknown as Record<string, unknown>;
+          const subId = (failedInvoiceData.subscription as string) || '';
           if (subId) {
             await ctx.prisma.subscription.updateMany({
               where: { stripeSubId: subId },
@@ -234,6 +243,9 @@ export const paymentsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      if (!stripe) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Payment service unavailable' });
+      }
       // Create a Stripe payment intent for credit top-up
       const paymentIntent = await stripe.paymentIntents.create({
         amount: input.amount,
