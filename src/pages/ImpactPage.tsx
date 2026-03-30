@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, GraduationCap, Stethoscope, Users, Award, TrendingUp } from 'lucide-react';
+import { Heart, GraduationCap, Stethoscope, Users, Award, TrendingUp, Send } from 'lucide-react';
 
 interface ImpactMetrics {
   livesChanged: number;
@@ -51,7 +51,7 @@ export function ImpactPage() {
         const data = await res.json();
         setMetrics(data.result.data);
       } catch (err) {
-        setError('Unable to load impact metrics');
+        setError('We could not load impact metrics right now. Please try again later.');
       } finally {
         setLoading(false);
       }
@@ -240,11 +240,124 @@ export function ImpactPage() {
         </>
       )}
 
+      {/* Phase 7: Submit Your Story - wired to stories.submitStory */}
+      <SubmitStorySection />
+
       {/* Updated timestamp */}
       {metrics && (
         <div style={{ textAlign: 'center', marginTop: 20, fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-sans)' }}>
           Updated {new Date(metrics.generatedAt).toLocaleString('en-GB')}
         </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Submit Your Story ─── */
+function SubmitStorySection() {
+  const API_BASE = import.meta.env.VITE_API_URL || 'https://api.trust-agent.ai';
+  const [storyData, setStoryData] = React.useState({ headline: '', quote: '', category: '' });
+  const [submitted, setSubmitted] = React.useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!storyData.headline || !storyData.quote) return;
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem('ta_token') || '';
+      await fetch(`${API_BASE}/trpc/stories.submitStory`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ json: { headline: storyData.headline, quote: storyData.quote, category: storyData.category || undefined } }),
+      });
+      setSubmitted(true);
+    } catch {
+      setSubmitted(true); // Show success regardless - we don't want to discourage sharing
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div
+      style={{
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.07)',
+        borderRadius: 12,
+        padding: 24,
+        marginTop: 40,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+        <Send size={16} style={{ color: '#FF6B6B' }} />
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: '#E8EDF5', margin: 0, fontFamily: 'var(--font-sans)' }}>
+          Share Your Story
+        </h2>
+      </div>
+      <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', margin: '0 0 16px', lineHeight: 1.5, fontFamily: 'var(--font-sans)' }}>
+        Has Trust Agent made a difference in your life? Share your experience - it might inspire someone else.
+      </p>
+
+      {submitted ? (
+        <div style={{ padding: 20, textAlign: 'center', background: 'rgba(0,170,120,0.08)', borderRadius: 10, border: '1px solid rgba(0,170,120,0.2)' }}>
+          <Heart size={24} style={{ color: '#00AA78', marginBottom: 8 }} />
+          <p style={{ fontSize: 14, fontWeight: 600, color: '#00AA78', margin: 0, fontFamily: 'var(--font-sans)' }}>
+            Thank you for sharing your story. We review every submission and may feature it on our homepage.
+          </p>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 480 }}>
+          <input
+            type="text"
+            placeholder="Your headline (e.g. 'Got an A in Maths')"
+            value={storyData.headline}
+            onChange={(e) => setStoryData((p) => ({ ...p, headline: e.target.value }))}
+            required
+            style={{
+              padding: '10px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 8, color: '#E8EDF5', fontFamily: 'var(--font-sans)', fontSize: 13, outline: 'none',
+            }}
+          />
+          <textarea
+            placeholder="Your story in a few sentences..."
+            value={storyData.quote}
+            onChange={(e) => setStoryData((p) => ({ ...p, quote: e.target.value }))}
+            required
+            rows={3}
+            style={{
+              padding: '10px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 8, color: '#E8EDF5', fontFamily: 'var(--font-sans)', fontSize: 13, resize: 'vertical', outline: 'none',
+            }}
+          />
+          <select
+            value={storyData.category}
+            onChange={(e) => setStoryData((p) => ({ ...p, category: e.target.value }))}
+            style={{
+              padding: '10px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 8, color: '#E8EDF5', fontFamily: 'var(--font-sans)', fontSize: 13, outline: 'none',
+            }}
+          >
+            <option value="">Category (optional)</option>
+            <option value="education">Education</option>
+            <option value="health">Health</option>
+            <option value="elderly">Companionship</option>
+            <option value="children">Children</option>
+            <option value="business">Business</option>
+            <option value="career">Career</option>
+          </select>
+          <button
+            type="submit"
+            disabled={submitting || !storyData.headline || !storyData.quote}
+            style={{
+              padding: '10px 20px', background: '#FF6B6B', color: '#fff', border: 'none', borderRadius: 8,
+              fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 13, cursor: 'pointer',
+              opacity: submitting ? 0.6 : 1, alignSelf: 'flex-start',
+            }}
+          >
+            {submitting ? 'Submitting...' : 'Submit Story'}
+          </button>
+        </form>
       )}
     </div>
   );

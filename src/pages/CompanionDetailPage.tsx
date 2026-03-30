@@ -65,6 +65,10 @@ interface AuditDetail {
   badgeExplanation: string;
   artefactHash: string | null;
   hashVerified: boolean | string;
+  // Phase 6F: Expert review fields
+  expertReviewText?: string | null;
+  reviewerName?: string | null;
+  reviewerCredentials?: string | null;
 }
 
 interface ReviewItem {
@@ -226,9 +230,64 @@ function AuditSection({ roleId }: { roleId: string }) {
             }}
           >
             <Lock size={14} />
-            Reviewed by: <strong style={{ color: 'var(--text-primary)' }}>{audit.auditedBy}</strong>
+            Reviewed by: <strong style={{ color: 'var(--text-primary)' }}>{audit.reviewerName || audit.auditedBy}</strong>
+            {audit.reviewerCredentials && (
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                ({audit.reviewerCredentials})
+              </span>
+            )}
             {' '} - {new Date(audit.completedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
           </div>
+
+          {/* Phase 6F: Expert review text */}
+          {audit.expertReviewText && (
+            <div
+              style={{
+                padding: 'var(--space-4)',
+                background: 'var(--bg-surface)',
+                borderRadius: 'var(--radius-md)',
+                borderLeft: '3px solid var(--accent-600)',
+                marginBottom: 'var(--space-4)',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-sans)',
+                  color: 'var(--accent-600)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  marginBottom: 'var(--space-2)',
+                }}
+              >
+                Expert Review
+              </div>
+              <p
+                style={{
+                  fontSize: 13,
+                  fontFamily: 'var(--font-serif)',
+                  fontStyle: 'italic',
+                  color: 'var(--text-secondary)',
+                  lineHeight: 1.7,
+                  margin: 0,
+                }}
+              >
+                {audit.expertReviewText}
+              </p>
+              <div
+                style={{
+                  marginTop: 'var(--space-3)',
+                  fontSize: 12,
+                  fontFamily: 'var(--font-sans)',
+                  color: 'var(--text-muted)',
+                }}
+              >
+                - {audit.reviewerName || audit.auditedBy}
+                {audit.reviewerCredentials ? `, ${audit.reviewerCredentials}` : ''}
+              </div>
+            </div>
+          )}
 
           {/* Hash verification */}
           {audit.artefactHash && (
@@ -598,8 +657,7 @@ function HireFlow({ roleId, companionName }: { roleId: string; companionName: st
       });
       setHireStatus('success');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Could not complete the hire. Please try again.';
-      setErrorMessage(msg);
+      setErrorMessage('Something went wrong completing the hire. Your data is safe - please try again.');
       setHireStatus('error');
     }
   };

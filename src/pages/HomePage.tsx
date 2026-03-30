@@ -241,21 +241,111 @@ function Hero({ stories }: { stories: FeaturedStory[] }) {
   );
 }
 
-/* ─── LIVES CHANGED STRIP ─── */
+/* ─── LIVES CHANGED STRIP (rotating stories from DB) ─── */
 function LivesChangedStrip() {
-  const { data } = useTrpcQuery(
+  const [storyIndex, setStoryIndex] = React.useState(0);
+
+  // Phase 6E: Fetch the 5 seeded stories from DB via stories.getFeatured
+  const { data: storiesData } = useTrpcQuery(
+    () => trpc.stories.getFeatured.query({ audience: 'homepage', limit: 5 }),
+    [],
+  );
+
+  const stories: FeaturedStory[] = storiesData ?? [];
+
+  // Rotate through stories every 5 seconds
+  React.useEffect(() => {
+    if (stories.length <= 1) return;
+    const timer = setInterval(() => {
+      setStoryIndex((prev) => (prev + 1) % stories.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [stories.length]);
+
+  // Also show live metrics alongside
+  const { data: metricsData } = useTrpcQuery(
     () => trpc.impact.liveMetrics.query({ days: 365 }),
     [],
   );
 
   const metrics = [
-    { label: 'Lives changed', value: data?.livesChanged ?? 0 },
-    { label: 'Sessions completed', value: data?.totalSessions ?? 0 },
-    { label: 'NHS referrals', value: data?.nhsReferrals ?? 0 },
+    { label: 'Lives changed', value: metricsData?.livesChanged ?? 0 },
+    { label: 'Sessions completed', value: metricsData?.totalSessions ?? 0 },
+    { label: 'NHS referrals', value: metricsData?.nhsReferrals ?? 0 },
   ];
+
+  const currentStory = stories[storyIndex];
 
   return (
     <Section background="var(--bg-surface)">
+      {/* Rotating story quote */}
+      {currentStory && (
+        <div
+          style={{
+            textAlign: 'center',
+            marginBottom: 'var(--space-6)',
+            minHeight: 60,
+          }}
+        >
+          <p
+            style={{
+              fontSize: 15,
+              fontFamily: 'var(--font-serif)',
+              fontStyle: 'italic',
+              color: 'var(--text-primary)',
+              lineHeight: 1.5,
+              marginBottom: 'var(--space-2)',
+              maxWidth: 600,
+              margin: '0 auto var(--space-2)',
+              transition: 'opacity 0.3s ease',
+            }}
+          >
+            &ldquo;{currentStory.quote}&rdquo;
+          </p>
+          <span
+            style={{
+              fontSize: 12,
+              fontFamily: 'var(--font-sans)',
+              color: 'var(--text-muted)',
+            }}
+          >
+            {currentStory.firstName}
+            {currentStory.city ? `, ${currentStory.city}` : ''}
+            {currentStory.outcome ? ` - ${currentStory.outcome}` : ''}
+          </span>
+          {/* Story dots */}
+          {stories.length > 1 && (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: 'var(--space-1)',
+                marginTop: 'var(--space-3)',
+              }}
+            >
+              {stories.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setStoryIndex(i)}
+                  aria-label={`Show story ${i + 1}`}
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: 'var(--radius-full)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: i === storyIndex ? 'var(--primary-600)' : 'var(--border-default)',
+                    transition: 'background var(--transition-fast)',
+                    padding: 0,
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Metrics row */}
       <div
         style={{
           display: 'flex',

@@ -367,7 +367,7 @@ export function BrainJournal({ hireId, companionName }: BrainJournalProps) {
               {formatDate(summary.lastNote.entryDate)}
             </span>
           </div>
-          <p style={{ fontSize: 13, color: '#C8D0DC', fontFamily: 'var(--font-sans)', lineHeight: 1.5, margin: 0 }}>
+          <p style={{ fontSize: 13, color: '#C8D0DC', fontFamily: 'var(--font-serif, "Instrument Serif", Georgia, serif)', fontStyle: 'italic', lineHeight: 1.6, margin: 0 }}>
             {summary.lastNote.content}
           </p>
           {summary.lastNote.nextFocus && (
@@ -510,8 +510,9 @@ export function BrainJournal({ hireId, companionName }: BrainJournalProps) {
                     style={{
                       fontSize: 13,
                       color: '#C8D0DC',
-                      fontFamily: 'var(--font-sans)',
-                      lineHeight: 1.5,
+                      fontFamily: 'var(--font-serif, "Instrument Serif", Georgia, serif)',
+                      fontStyle: 'italic',
+                      lineHeight: 1.6,
                       margin: 0,
                     }}
                   >

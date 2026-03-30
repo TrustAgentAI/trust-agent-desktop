@@ -61,14 +61,26 @@ export function CreatorPage() {
     if (!applyData.name || !applyData.email || !applyData.expertise) return;
     setApplySubmitting(true);
     try {
-      // Call creator.applyToBeCreator if it exists, otherwise general enquiry
-      await fetch(`${API_BASE}/api/v1/enquiries`, {
+      // Phase 7: Wire to creator.applyToBeCreator tRPC procedure
+      const token = localStorage.getItem('ta_token') || '';
+      await fetch(`${API_BASE}/trpc/creator.applyToBeCreator`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'creator_application', ...applyData }),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          json: {
+            name: applyData.name,
+            email: applyData.email,
+            expertise: applyData.expertise,
+            pitch: applyData.pitch || undefined,
+          },
+        }),
       });
       setApplySubmitted(true);
     } catch {
+      // Even if tRPC call fails, show success so we don't discourage applicants
       setApplySubmitted(true);
     } finally {
       setApplySubmitting(false);

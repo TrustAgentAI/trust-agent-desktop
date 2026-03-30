@@ -92,11 +92,46 @@ export function NotificationCenter() {
     }
   }, []);
 
+  // Phase 6D: Wire exam context to notifications - check Brain for upcoming exams
+  const syncExamContext = useCallback(async () => {
+    try {
+      // Fetch active hires to check for exam-related brain data
+      const hiresRes = await api.get<any>('/trpc/hires.listHires');
+      const hiresData = (hiresRes as any)?.result?.data?.json || (hiresRes as any)?.result?.data || hiresRes;
+      const hires = Array.isArray(hiresData) ? hiresData : hiresData?.hires || [];
+
+      for (const hire of hires) {
+        if (!hire.hireId) continue;
+        try {
+          const brainRes = await api.get<any>(
+            '/trpc/brain.getBrainSummary?input=' + encodeURIComponent(JSON.stringify({ json: { hireId: hire.hireId } }))
+          );
+          const brainData = (brainRes as any)?.result?.data?.json || (brainRes as any)?.result?.data || brainRes;
+          // If brain has exam-related notes, fire setExamContext
+          if (brainData?.lastNote?.nextFocus && /exam|test|assessment|gcse|a-level/i.test(brainData.lastNote.nextFocus)) {
+            await api.post('/trpc/notifications.setExamContext', {
+              json: {
+                hireId: hire.hireId,
+                examTopic: brainData.lastNote.nextFocus,
+                companionName: brainData.companionName || hire.companionName,
+              },
+            });
+          }
+        } catch {
+          // Brain data not available for this hire - skip
+        }
+      }
+    } catch {
+      // Hires API may not be available
+    }
+  }, []);
+
   useEffect(() => {
     fetchUnreadCount();
+    syncExamContext(); // Phase 6D: Sync exam context on mount
     const interval = setInterval(fetchUnreadCount, 60000); // Poll every minute
     return () => clearInterval(interval);
-  }, [fetchUnreadCount]);
+  }, [fetchUnreadCount, syncExamContext]);
 
   useEffect(() => {
     if (isOpen) {

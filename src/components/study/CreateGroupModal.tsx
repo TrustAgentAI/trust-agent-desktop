@@ -53,7 +53,7 @@ export function CreateGroupModal({ open, onClose, onCreated }: CreateGroupModalP
       onCreated(group);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create group');
+      setError('We could not create the study group right now. Your data is safe - please try again.');
     } finally {
       setIsSubmitting(false);
     }

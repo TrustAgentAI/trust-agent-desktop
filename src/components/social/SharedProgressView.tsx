@@ -50,7 +50,7 @@ export function SharedProgressView({ shareUrl }: Props) {
         );
         setData(result);
       } catch (err) {
-        setError((err as Error).message || 'Share not found or expired');
+        setError('This share link may have expired or is not available. Please ask for a new link.');
       } finally {
         setLoading(false);
       }

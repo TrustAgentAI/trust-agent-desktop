@@ -185,6 +185,7 @@ export function SessionView({
     // Wait until brain summary has loaded (or failed)
     if (brainSummary === null && brainLoading) return;
 
+    async function injectFirstMessage() {
     let firstMsgContent: string | null = null;
 
     if (brainSummary && brainSummary.sessionCount > 0 && brainSummary.lastNote) {
@@ -205,6 +206,24 @@ export function SessionView({
       } catch {
         // Storage access may fail
       }
+
+      // Phase 6B: If no stored message, call onboarding.getFirstMessage from backend
+      if (!firstMsgContent && activeRoleId) {
+        try {
+          const onboardingRes = await api.post<Record<string, unknown>>('/api/trpc/onboarding.getFirstMessage', {
+            json: { hireId: activeRoleId },
+          });
+          const onboardingData = (onboardingRes as Record<string, unknown>)?.result
+            ? ((onboardingRes as Record<string, unknown>).result as Record<string, unknown>)?.data
+            : onboardingRes;
+          if (onboardingData && typeof onboardingData === 'object') {
+            const od = onboardingData as Record<string, unknown>;
+            firstMsgContent = (od.message as string) || (od.firstMessage as string) || null;
+          }
+        } catch {
+          // Onboarding API may not be available - continue without
+        }
+      }
     }
 
     if (firstMsgContent && activeRoleId) {
@@ -217,6 +236,9 @@ export function SessionView({
       };
       addMessage(activeRoleId, ahaMessage);
     }
+    } // end async function injectFirstMessage
+
+    injectFirstMessage();
   }, [activeRoleId, brainSummary, brainLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Session timer with anti-dependency checks

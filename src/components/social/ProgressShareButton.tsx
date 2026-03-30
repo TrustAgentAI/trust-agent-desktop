@@ -51,7 +51,7 @@ export function ProgressShareButton({ hireId, shareType, label, compact = false 
       setShareUrl(result.fullUrl);
       await copyToClipboard(result.fullUrl);
     } catch (err) {
-      setError((err as Error).message || 'Failed to create share link');
+      setError('We could not create a share link right now. Please try again.');
     } finally {
       setCreating(false);
     }

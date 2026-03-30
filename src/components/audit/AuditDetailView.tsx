@@ -445,8 +445,8 @@ export function AuditDetailView({ roleId, onBack }: AuditDetailViewProps) {
         } else if (data.audit) {
           setAudit(data.audit);
         }
-      } catch (err: any) {
-        setError(err.message || 'Failed to load audit details');
+      } catch (_err: any) {
+        setError('We could not load the audit details right now. Please try again later.');
       } finally {
         setIsLoading(false);
       }

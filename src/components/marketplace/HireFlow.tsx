@@ -70,7 +70,7 @@ export function HireFlow({
       });
       setStep('success');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+      setError('Something went wrong completing the hire. Your data is safe - please try again.');
       setStep('error');
     }
   };
