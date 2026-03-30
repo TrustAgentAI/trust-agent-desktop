@@ -1,6 +1,8 @@
 import { z } from 'zod';
+import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure, publicProcedure } from '../trpc';
 import { generateFirstMessage, type QuizAnswers } from '../lib/onboarding/generateFirstMessage';
+import { trackCheckpoint } from '../lib/onboarding/trackCheckpoint';
 
 // ── Role matching logic ─────────────────────────────────────────────────────
 // Maps quiz answers to the best matching role from the DB catalog.
@@ -250,6 +252,109 @@ export const onboardingRouter = router({
       return {
         firstMessage: quiz?.firstMessage ?? null,
         hasQuizData: !!quiz,
+      };
+    }),
+
+  // ── Phase 2: Onboarding checkpoint tracking ──────────────────────────────
+  trackCheckpoint: publicProcedure
+    .input(z.object({
+      step: z.string(),
+      userId: z.string().optional(),
+      sessionToken: z.string().optional(),
+      recommendedSlug: z.string().optional(),
+      device: z.string().optional(),
+      referralSource: z.string().optional(),
+      durationSeconds: z.number().optional(),
+      quizAnswers: z.record(z.unknown()).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return trackCheckpoint(input.step, {
+        userId: input.userId,
+        sessionToken: input.sessionToken,
+        recommendedSlug: input.recommendedSlug,
+        device: input.device,
+        referralSource: input.referralSource,
+        durationSeconds: input.durationSeconds,
+        quizAnswers: input.quizAnswers,
+      });
+    }),
+
+  // ── Phase 8: Mobile Handoff Flow (90-second setup for elderly users) ────
+  // "When a daughter sets up the app for her mum."
+  initiateHandoff: protectedProcedure
+    .input(z.object({
+      companionSlug: z.string(),
+      companionCustomName: z.string().min(1).max(50),
+      targetEmail: z.string().email().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Validate companion exists
+      const role = await ctx.prisma.role.findFirst({
+        where: { slug: input.companionSlug, isActive: true },
+      });
+
+      if (!role) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Companion not found',
+        });
+      }
+
+      // Create handoff session
+      const handoff = await ctx.prisma.mobileHandoffSession.create({
+        data: {
+          setupUserId: ctx.user.id,
+          companionSlug: input.companionSlug,
+          companionName: input.companionCustomName,
+          setupSteps: ['companion_chosen', 'named'],
+        },
+      });
+
+      // Determine voice mode based on category
+      const isElderlyOrCompanion = role.category === 'elderly' || role.category === 'daily_companion';
+      const voiceMode = isElderlyOrCompanion ? 'voice' : 'text';
+
+      // Start the hire for the setup user (will be transferred if target accepts)
+      const hire = await ctx.prisma.hire.create({
+        data: {
+          userId: ctx.user.id,
+          roleId: role.id,
+          customCompanionName: input.companionCustomName,
+          status: 'ACTIVE',
+          priceMonthly: role.priceMonthly,
+          personalityConfig: {
+            create: {
+              voiceMode,
+            },
+          },
+        },
+      });
+
+      // Mark handoff complete
+      await ctx.prisma.mobileHandoffSession.update({
+        where: { id: handoff.id },
+        data: {
+          setupCompleted: true,
+          setupSteps: ['companion_chosen', 'named', 'cloud_connected'],
+          completedAt: new Date(),
+        },
+      });
+
+      // Track checkpoint
+      await trackCheckpoint('hired', {
+        userId: ctx.user.id,
+        recommendedSlug: input.companionSlug,
+        device: 'mobile',
+        referralSource: 'handoff_flow',
+      });
+
+      return {
+        hireId: hire.id,
+        companionName: input.companionCustomName,
+        handoffId: handoff.id,
+        nextStep: 'first_session',
+        voiceRecommended: isElderlyOrCompanion,
+        greeting: `${input.companionCustomName} is ready. Tap to say hello.`,
       };
     }),
 });

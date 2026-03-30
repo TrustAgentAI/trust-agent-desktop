@@ -251,4 +251,77 @@ export const paymentsRouter = router({
         paymentIntentId: paymentIntent.id,
       };
     }),
+
+  // ── Phase 7: Cancellation without dark patterns ─────────────────────────
+  // "Tell us what we could have done better."
+  // No countdown. No guilt. No "are you sure?". Just honesty.
+  cancelSubscription: protectedProcedure
+    .input(z.object({
+      reason: z.enum([
+        'too_expensive',
+        'not_using_enough',
+        'found_alternative',
+        'technical_issues',
+        'personal_circumstances',
+        'other',
+      ]),
+      freeText: z.string().max(1000).optional(),
+      wouldReturn: z.boolean().optional(),
+      suggestedImprovement: z.string().max(1000).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.prisma.user.findUniqueOrThrow({
+        where: { id: ctx.user.id },
+        select: { subscriptionTier: true, stripeSubscriptionId: true },
+      });
+
+      // Get usage stats for the feedback record
+      const sessionCount = await ctx.prisma.agentSession.count({
+        where: { hire: { userId: ctx.user.id } },
+      });
+
+      // Store cancellation feedback - this data is gold for product decisions
+      await ctx.prisma.cancellationFeedback.create({
+        data: {
+          userId: ctx.user.id,
+          reason: input.reason,
+          freeText: input.freeText,
+          wouldReturn: input.wouldReturn,
+          suggestedImprovement: input.suggestedImprovement,
+          subscriptionTier: user.subscriptionTier ?? 'starter',
+          sessionsCompleted: sessionCount,
+        },
+      });
+
+      // Cancel with Stripe at period end (not immediately)
+      if (stripe && user.stripeSubscriptionId) {
+        await stripe.subscriptions.update(user.stripeSubscriptionId, {
+          cancel_at_period_end: true,
+        });
+      }
+
+      // Update user
+      await ctx.prisma.user.update({
+        where: { id: ctx.user.id },
+        data: { scheduledCancellationAt: new Date() },
+      });
+
+      // Log to audit trail
+      await ctx.prisma.platformAuditLog.create({
+        data: {
+          userId: ctx.user.id,
+          action: 'subscription.cancel_requested',
+          entityType: 'User',
+          entityId: ctx.user.id,
+          newValue: { reason: input.reason, tier: user.subscriptionTier },
+        },
+      });
+
+      return {
+        success: true,
+        message: "Your subscription will end at the current billing period. Your companions are paused but your Brain, your memory notes, and everything your companions know about you is preserved. If you come back, everything will be exactly as you left it.",
+        brainPreservedForever: true,
+        accessUntil: null,
+      };
+    }),
 });

@@ -1,6 +1,15 @@
+import { z } from 'zod';
 import { router, publicProcedure } from '../trpc';
+import { getHumanError } from '../lib/errors/getHumanError';
 
 export const systemRouter = router({
+  // Phase 6: Human error messages - warm, not "Error 500"
+  getErrorMessage: publicProcedure
+    .input(z.object({ errorCode: z.string() }))
+    .query(async ({ input }) => {
+      return getHumanError(input.errorCode);
+    }),
+
   getHealth: publicProcedure.query(async ({ ctx }) => {
     const checks: Record<string, string> = {};
 

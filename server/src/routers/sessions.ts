@@ -7,6 +7,8 @@ import { checkAndAwardMilestones } from './milestones';
 import { generateMemoryNote } from '../lib/brain/generateMemoryNote';
 import { runSafeguardingPreCheck } from '../lib/safeguarding/checker';
 import { runSafeguardingEscalation } from '../lib/safeguarding/escalationEngine';
+import { getVoiceRecommendation, getStreamingConfig } from '../lib/sessions/voiceDefaults';
+import { getAudioForEnvironment } from '../lib/environments/ambientAudio';
 
 // S3 client for document uploads (B.7)
 const s3 = new S3Client({
@@ -713,5 +715,148 @@ export const sessionsRouter = router({
       }
 
       return session;
+    }),
+
+  // ── Phase 4: Voice recommendation endpoint ──────────────────────────────
+  getVoiceRecommendation: protectedProcedure
+    .input(z.object({ hireId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const hire = await ctx.prisma.hire.findFirst({
+        where: { id: input.hireId, userId: ctx.user.id },
+        include: {
+          role: {
+            select: {
+              category: true,
+              defaultCompanionName: true,
+              companionName: true,
+            },
+          },
+        },
+      });
+
+      if (!hire) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Hire not found' });
+      }
+
+      const companionName =
+        hire.customCompanionName ??
+        hire.role.defaultCompanionName ??
+        hire.role.companionName;
+
+      // Check if user has used voice before via preferences
+      const prefs = await ctx.prisma.userPreferences.findUnique({
+        where: { userId: ctx.user.id },
+        select: { voiceEnabled: true },
+      });
+
+      const voiceRec = getVoiceRecommendation(
+        hire.role.category,
+        companionName,
+        prefs?.voiceEnabled ?? false,
+      );
+
+      return voiceRec;
+    }),
+
+  // ── Phase 4: Session config (ambient audio + voice + streaming) ─────────
+  getSessionConfig: protectedProcedure
+    .input(
+      z.object({
+        hireId: z.string(),
+        environmentSlug: z.string(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const hire = await ctx.prisma.hire.findFirstOrThrow({
+        where: { id: input.hireId, userId: ctx.user.id },
+        include: {
+          role: {
+            select: {
+              category: true,
+              defaultCompanionName: true,
+              companionName: true,
+              gender: true,
+            },
+          },
+        },
+      });
+
+      const companionName =
+        hire.customCompanionName ??
+        hire.role.defaultCompanionName ??
+        hire.role.companionName;
+      const category = hire.role.category;
+
+      // Get ambient audio config for this environment
+      const audio = getAudioForEnvironment(input.environmentSlug);
+
+      // Generate presigned URL for ambient audio (1 hour expiry)
+      let audioUrl: string | null = null;
+      if (audio) {
+        try {
+          const assetsBucket =
+            process.env.S3_ASSETS_BUCKET || 'trustagent-prod-assets';
+          const command = new GetObjectCommand({
+            Bucket: assetsBucket,
+            Key: audio.s3Key,
+          });
+          audioUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
+        } catch {
+          // S3 presign failed - audio will be null, session proceeds without ambient
+          audioUrl = null;
+        }
+      }
+
+      // Get user preferences for overrides
+      const prefs = await ctx.prisma.userPreferences.findUnique({
+        where: { userId: ctx.user.id },
+        select: {
+          voiceEnabled: true,
+          ambientAudioEnabled: true,
+          highContrastMode: true,
+          fontSize: true,
+          calmMode: true,
+        },
+      });
+
+      // Get voice recommendation
+      const voiceRec = getVoiceRecommendation(
+        category,
+        companionName,
+        prefs?.voiceEnabled ?? false,
+      );
+
+      // Get streaming config
+      const streaming = getStreamingConfig(category);
+
+      return {
+        companion: {
+          name: companionName,
+          category,
+          gender: hire.role.gender,
+        },
+        ambient: {
+          url: audioUrl,
+          defaultVolume: audio?.defaultVolume ?? 10,
+          enabled: prefs?.ambientAudioEnabled ?? true,
+          fadeInMs: audio?.fadeInMs ?? 2000,
+          fadeOutMs: audio?.fadeOutMs ?? 1500,
+        },
+        voice: {
+          mode: prefs?.voiceEnabled ? 'voice' : 'text',
+          speed: 1.0,
+          recommendation: voiceRec,
+        },
+        streaming: {
+          minThinkingMs: streaming.minThinkingMs,
+          charsPerChunk: streaming.charsPerChunk,
+          baseDelayMs: streaming.baseDelayMs,
+        },
+        accessibility: {
+          highContrast: prefs?.highContrastMode ?? false,
+          largeText: prefs?.fontSize === 'large' || prefs?.fontSize === 'xlarge',
+          reducedMotion: prefs?.calmMode ?? false,
+        },
+      };
     }),
 });
