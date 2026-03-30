@@ -1,5 +1,6 @@
 import React from 'react';
-import { Settings, Wifi, WifiOff, ExternalLink, Globe, User, Smartphone } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Settings, Wifi, WifiOff, ExternalLink, Globe, User, Smartphone, ChevronRight, Mic, Accessibility, Bell, Shield } from 'lucide-react';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useAuthStore } from '@/store/authStore';
 import { isTauri } from '@/lib/tauri-compat';
@@ -58,6 +59,7 @@ const modelDefaults: Record<LLMProvider, string> = {
 };
 
 export function SettingsPage() {
+  const navigate = useNavigate();
   const settings = useSettingsStore();
   const auth = useAuthStore();
   const [testingConnection, setTestingConnection] = React.useState(false);
@@ -129,6 +131,41 @@ export function SettingsPage() {
         >
           Settings
         </span>
+      </div>
+
+      {/* Quick Nav */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 24 }}>
+        {[
+          { path: '/settings/profile', icon: <User size={16} />, label: 'Profile', desc: 'Name, email, account info' },
+          { path: '/settings/voice', icon: <Mic size={16} />, label: 'Voice and Personality', desc: 'Verbosity, formality, voice mode' },
+          { path: '/settings/accessibility', icon: <Accessibility size={16} />, label: 'Accessibility', desc: 'Contrast, text size, motion' },
+          { path: '/settings/notifications', icon: <Bell size={16} />, label: 'Notifications', desc: 'Push, email, alerts' },
+          { path: '/settings/privacy', icon: <Shield size={16} />, label: 'Privacy and Data', desc: 'Data export, account deletion' },
+        ].map((item) => (
+          <button
+            key={item.path}
+            onClick={() => navigate(item.path)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '12px 16px',
+              background: 'var(--color-surface-1)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-md)',
+              cursor: 'pointer',
+              transition: 'background 0.15s ease',
+              textAlign: 'left',
+            }}
+          >
+            <div style={{ color: 'var(--color-electric-blue)', flexShrink: 0 }}>{item.icon}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#E8EDF5' }}>{item.label}</div>
+              <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{item.desc}</div>
+            </div>
+            <ChevronRight size={14} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+          </button>
+        ))}
       </div>
 
       {/* Account */}

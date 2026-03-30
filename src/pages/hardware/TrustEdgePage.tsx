@@ -2,7 +2,6 @@
  * Phase 9 - TrustEdge Enterprise Hardware Page
  * Enterprise-grade AI appliance at 999 GBP.
  */
-import React from 'react';
 import { Server, Cpu, Wifi, Shield, Zap, HardDrive, Network, CheckCircle, Building2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';

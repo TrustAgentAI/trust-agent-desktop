@@ -2,7 +2,6 @@
  * Phase 9 - TrustStick Hardware Page
  * Portable AI companion stick at 179 GBP.
  */
-import React from 'react';
 import { Usb, Cpu, Wifi, Shield, Zap, HardDrive, CheckCircle } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';

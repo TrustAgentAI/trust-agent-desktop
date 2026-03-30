@@ -2,7 +2,6 @@
  * Phase 9 - TrustBox Pro Hardware Page
  * Full spec, pricing, features for the TrustBox Pro at 449 GBP.
  */
-import React from 'react';
 import { Box, Cpu, Wifi, Shield, Zap, HardDrive, Monitor, CheckCircle } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';

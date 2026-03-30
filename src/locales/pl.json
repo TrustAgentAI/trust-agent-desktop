@@ -1,0 +1,94 @@
+{
+  "nav": {
+    "chat": "Czat",
+    "tasks": "Zadania",
+    "marketplace": "Rynek",
+    "permissions": "Uprawnienia",
+    "settings": "Ustawienia"
+  },
+  "sidebar": {
+    "hired_roles": "Zatrudnione role",
+    "add_role": "Dodaj rol\u0119",
+    "no_roles": "Brak zatrudnionych r\u00f3l",
+    "tier_free": "BEZP\u0141ATNY",
+    "tier_pro": "PRO",
+    "tier_ent": "ENT"
+  },
+  "chat": {
+    "send": "Wy\u015blij",
+    "placeholder": "Napisz wiadomo\u015b\u0107...",
+    "thinking": "My\u015bl\u0119...",
+    "clear_history": "Wyczy\u015b\u0107 histori\u0119",
+    "export_chat": "Eksportuj czat"
+  },
+  "tasks": {
+    "title": "Zadania",
+    "add_task": "Dodaj zadanie",
+    "in_progress": "W toku",
+    "completed": "Uko\u0144czone",
+    "pending": "Oczekuj\u0105ce",
+    "no_tasks": "Brak zada\u0144"
+  },
+  "marketplace": {
+    "browse": "Przegl\u0105daj agent\u00f3w",
+    "search_placeholder": "Szukaj agent\u00f3w...",
+    "hire": "Zatrudnij",
+    "install": "Zainstaluj",
+    "trust_score": "Wynik zaufania",
+    "price": "Cena",
+    "free": "Bezp\u0142atne",
+    "categories": "Kategorie",
+    "filter": "Filtruj",
+    "sort": "Sortuj"
+  },
+  "permissions": {
+    "title": "Uprawnienia",
+    "granted": "Przyznane",
+    "denied": "Odm\u00f3wione",
+    "pending_review": "W trakcie weryfikacji",
+    "file_access": "Dost\u0119p do plik\u00f3w",
+    "network_access": "Dost\u0119p do sieci",
+    "system_access": "Dost\u0119p do systemu"
+  },
+  "settings": {
+    "title": "Ustawienia",
+    "general": "Og\u00f3lne",
+    "appearance": "Wygl\u0105d",
+    "language": "J\u0119zyk",
+    "notifications": "Powiadomienia",
+    "api_keys": "Klucze API",
+    "about": "O aplikacji",
+    "theme": "Motyw",
+    "dark_mode": "Tryb ciemny",
+    "light_mode": "Tryb jasny"
+  },
+  "connection": {
+    "connected": "Po\u0142\u0105czono",
+    "disconnected": "Roz\u0142\u0105czono",
+    "reconnecting": "Ponowne \u0142\u0105czenie...",
+    "gateway_url": "URL bramy"
+  },
+  "common": {
+    "loading": "\u0141adowanie...",
+    "error": "Co\u015b posz\u0142o nie tak",
+    "retry": "Spr\u00f3buj ponownie",
+    "save": "Zapisz",
+    "cancel": "Anuluj",
+    "confirm": "Potwierd\u017a",
+    "back": "Wstecz",
+    "next": "Dalej",
+    "search": "Szukaj",
+    "no_results": "Brak wynik\u00f3w",
+    "close": "Zamknij",
+    "open": "Otw\u00f3rz",
+    "delete": "Usu\u0144",
+    "edit": "Edytuj"
+  },
+  "auth": {
+    "signin": "Zaloguj si\u0119",
+    "signup": "Zarejestruj si\u0119",
+    "logout": "Wyloguj si\u0119",
+    "email": "E-mail",
+    "password": "Has\u0142o"
+  }
+}

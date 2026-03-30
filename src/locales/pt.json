@@ -1,0 +1,94 @@
+{
+  "nav": {
+    "chat": "Chat",
+    "tasks": "Tarefas",
+    "marketplace": "Mercado",
+    "permissions": "Permiss\u00f5es",
+    "settings": "Configura\u00e7\u00f5es"
+  },
+  "sidebar": {
+    "hired_roles": "Fun\u00e7\u00f5es contratadas",
+    "add_role": "Adicionar fun\u00e7\u00e3o",
+    "no_roles": "Nenhuma fun\u00e7\u00e3o contratada",
+    "tier_free": "GRATIS",
+    "tier_pro": "PRO",
+    "tier_ent": "EMP"
+  },
+  "chat": {
+    "send": "Enviar",
+    "placeholder": "Digite uma mensagem...",
+    "thinking": "Pensando...",
+    "clear_history": "Limpar hist\u00f3rico",
+    "export_chat": "Exportar chat"
+  },
+  "tasks": {
+    "title": "Tarefas",
+    "add_task": "Adicionar tarefa",
+    "in_progress": "Em andamento",
+    "completed": "Conclu\u00eddas",
+    "pending": "Pendentes",
+    "no_tasks": "Nenhuma tarefa"
+  },
+  "marketplace": {
+    "browse": "Explorar agentes",
+    "search_placeholder": "Buscar agentes...",
+    "hire": "Contratar",
+    "install": "Instalar",
+    "trust_score": "Pontua\u00e7\u00e3o de confian\u00e7a",
+    "price": "Pre\u00e7o",
+    "free": "Gratuito",
+    "categories": "Categorias",
+    "filter": "Filtrar",
+    "sort": "Ordenar"
+  },
+  "permissions": {
+    "title": "Permiss\u00f5es",
+    "granted": "Concedido",
+    "denied": "Negado",
+    "pending_review": "Em revis\u00e3o",
+    "file_access": "Acesso a arquivos",
+    "network_access": "Acesso \u00e0 rede",
+    "system_access": "Acesso ao sistema"
+  },
+  "settings": {
+    "title": "Configura\u00e7\u00f5es",
+    "general": "Geral",
+    "appearance": "Apar\u00eancia",
+    "language": "Idioma",
+    "notifications": "Notifica\u00e7\u00f5es",
+    "api_keys": "Chaves API",
+    "about": "Sobre",
+    "theme": "Tema",
+    "dark_mode": "Modo escuro",
+    "light_mode": "Modo claro"
+  },
+  "connection": {
+    "connected": "Conectado",
+    "disconnected": "Desconectado",
+    "reconnecting": "Reconectando...",
+    "gateway_url": "URL do gateway"
+  },
+  "common": {
+    "loading": "Carregando...",
+    "error": "Algo deu errado",
+    "retry": "Tentar novamente",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "back": "Voltar",
+    "next": "Pr\u00f3ximo",
+    "search": "Buscar",
+    "no_results": "Nenhum resultado encontrado",
+    "close": "Fechar",
+    "open": "Abrir",
+    "delete": "Excluir",
+    "edit": "Editar"
+  },
+  "auth": {
+    "signin": "Entrar",
+    "signup": "Cadastrar",
+    "logout": "Sair",
+    "email": "Email",
+    "password": "Senha"
+  }
+}

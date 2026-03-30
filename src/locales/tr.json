@@ -1,0 +1,94 @@
+{
+  "nav": {
+    "chat": "Sohbet",
+    "tasks": "G\u00f6revler",
+    "marketplace": "Pazar yeri",
+    "permissions": "\u0130zinler",
+    "settings": "Ayarlar"
+  },
+  "sidebar": {
+    "hired_roles": "\u0130\u015fe al\u0131nan roller",
+    "add_role": "Rol ekle",
+    "no_roles": "Hen\u00fcz rol yok",
+    "tier_free": "\u00dcCRETSiZ",
+    "tier_pro": "PRO",
+    "tier_ent": "ENT"
+  },
+  "chat": {
+    "send": "G\u00f6nder",
+    "placeholder": "Bir mesaj yaz\u0131n...",
+    "thinking": "D\u00fc\u015f\u00fcn\u00fcyorum...",
+    "clear_history": "Ge\u00e7mi\u015fi temizle",
+    "export_chat": "Sohbeti d\u0131\u015fa aktar"
+  },
+  "tasks": {
+    "title": "G\u00f6revler",
+    "add_task": "G\u00f6rev ekle",
+    "in_progress": "Devam ediyor",
+    "completed": "Tamamland\u0131",
+    "pending": "Beklemede",
+    "no_tasks": "Hen\u00fcz g\u00f6rev yok"
+  },
+  "marketplace": {
+    "browse": "Ajanlara g\u00f6z at",
+    "search_placeholder": "Ajan ara...",
+    "hire": "\u0130\u015fe al",
+    "install": "Y\u00fckle",
+    "trust_score": "G\u00fcven puan\u0131",
+    "price": "Fiyat",
+    "free": "\u00dccretsiz",
+    "categories": "Kategoriler",
+    "filter": "Filtrele",
+    "sort": "S\u0131rala"
+  },
+  "permissions": {
+    "title": "\u0130zinler",
+    "granted": "Verildi",
+    "denied": "Reddedildi",
+    "pending_review": "\u0130nceleniyor",
+    "file_access": "Dosya eri\u015fimi",
+    "network_access": "A\u011f eri\u015fimi",
+    "system_access": "Sistem eri\u015fimi"
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "general": "Genel",
+    "appearance": "G\u00f6r\u00fcn\u00fcm",
+    "language": "Dil",
+    "notifications": "Bildirimler",
+    "api_keys": "API anahtarlar\u0131",
+    "about": "Hakk\u0131nda",
+    "theme": "Tema",
+    "dark_mode": "Karanl\u0131k mod",
+    "light_mode": "Ayd\u0131nl\u0131k mod"
+  },
+  "connection": {
+    "connected": "Ba\u011fl\u0131",
+    "disconnected": "Ba\u011flant\u0131 kesildi",
+    "reconnecting": "Yeniden ba\u011flan\u0131yor...",
+    "gateway_url": "A\u011f ge\u00e7idi URL"
+  },
+  "common": {
+    "loading": "Y\u00fckleniyor...",
+    "error": "Bir \u015feyler ters gitti",
+    "retry": "Tekrar dene",
+    "save": "Kaydet",
+    "cancel": "\u0130ptal",
+    "confirm": "Onayla",
+    "back": "Geri",
+    "next": "\u0130leri",
+    "search": "Ara",
+    "no_results": "Sonu\u00e7 bulunamad\u0131",
+    "close": "Kapat",
+    "open": "A\u00e7",
+    "delete": "Sil",
+    "edit": "D\u00fczenle"
+  },
+  "auth": {
+    "signin": "Giri\u015f yap",
+    "signup": "Kay\u0131t ol",
+    "logout": "\u00c7\u0131k\u0131\u015f",
+    "email": "E-posta",
+    "password": "\u015eifre"
+  }
+}

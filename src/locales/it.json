@@ -1,0 +1,94 @@
+{
+  "nav": {
+    "chat": "Chat",
+    "tasks": "Attivit\u00e0",
+    "marketplace": "Mercato",
+    "permissions": "Permessi",
+    "settings": "Impostazioni"
+  },
+  "sidebar": {
+    "hired_roles": "Ruoli assunti",
+    "add_role": "Aggiungi ruolo",
+    "no_roles": "Nessun ruolo assunto",
+    "tier_free": "GRATIS",
+    "tier_pro": "PRO",
+    "tier_ent": "ENT"
+  },
+  "chat": {
+    "send": "Invia",
+    "placeholder": "Scrivi un messaggio...",
+    "thinking": "Sto pensando...",
+    "clear_history": "Cancella cronologia",
+    "export_chat": "Esporta chat"
+  },
+  "tasks": {
+    "title": "Attivit\u00e0",
+    "add_task": "Aggiungi attivit\u00e0",
+    "in_progress": "In corso",
+    "completed": "Completate",
+    "pending": "In attesa",
+    "no_tasks": "Nessuna attivit\u00e0"
+  },
+  "marketplace": {
+    "browse": "Esplora agenti",
+    "search_placeholder": "Cerca agenti...",
+    "hire": "Assumi",
+    "install": "Installa",
+    "trust_score": "Punteggio fiducia",
+    "price": "Prezzo",
+    "free": "Gratuito",
+    "categories": "Categorie",
+    "filter": "Filtro",
+    "sort": "Ordina"
+  },
+  "permissions": {
+    "title": "Permessi",
+    "granted": "Concesso",
+    "denied": "Negato",
+    "pending_review": "In revisione",
+    "file_access": "Accesso file",
+    "network_access": "Accesso rete",
+    "system_access": "Accesso sistema"
+  },
+  "settings": {
+    "title": "Impostazioni",
+    "general": "Generale",
+    "appearance": "Aspetto",
+    "language": "Lingua",
+    "notifications": "Notifiche",
+    "api_keys": "Chiavi API",
+    "about": "Informazioni",
+    "theme": "Tema",
+    "dark_mode": "Modalit\u00e0 scura",
+    "light_mode": "Modalit\u00e0 chiara"
+  },
+  "connection": {
+    "connected": "Connesso",
+    "disconnected": "Disconnesso",
+    "reconnecting": "Riconnessione...",
+    "gateway_url": "URL gateway"
+  },
+  "common": {
+    "loading": "Caricamento...",
+    "error": "Qualcosa \u00e8 andato storto",
+    "retry": "Riprova",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "confirm": "Conferma",
+    "back": "Indietro",
+    "next": "Avanti",
+    "search": "Cerca",
+    "no_results": "Nessun risultato trovato",
+    "close": "Chiudi",
+    "open": "Apri",
+    "delete": "Elimina",
+    "edit": "Modifica"
+  },
+  "auth": {
+    "signin": "Accedi",
+    "signup": "Registrati",
+    "logout": "Esci",
+    "email": "Email",
+    "password": "Password"
+  }
+}

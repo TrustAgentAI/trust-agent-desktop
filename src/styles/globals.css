@@ -19,10 +19,10 @@
   --color-border: rgba(30, 111, 255, 0.12);
   --color-border-active: rgba(30, 111, 255, 0.3);
 
-  /* Typography */
-  --font-sans: 'Manrope', system-ui, -apple-system, sans-serif;
+  /* Typography - DM Sans is primary (from tokens.css), Manrope is fallback */
+  --font-sans: 'DM Sans', 'Manrope', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-  --font-primary: 'Manrope', sans-serif;
+  --font-primary: 'DM Sans', 'Manrope', sans-serif;
 
   /* Spacing */
   --radius-sm: 6px;

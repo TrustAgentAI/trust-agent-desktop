@@ -99,7 +99,7 @@ export function SessionView({
 
   const envConfig: EnvironmentConfig = environmentConfig || {
     colorTemperature: 'cool',
-    categoryAccentColor: '#1E6FFF',
+    categoryAccentColor: 'var(--color-electric-blue)',
     sessionMood: 'focused',
   };
 
@@ -779,7 +779,7 @@ export function SessionView({
                   {activeRole.roleName.charAt(0)}
                 </div>
               )}
-              <div style={{ fontSize: 15, fontWeight: 600, color: '#E8EDF5', fontFamily: 'var(--font-sans)' }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-inverse, #E8EDF5)', fontFamily: 'var(--font-sans)' }}>
                 {activeRole.roleName}
               </div>
               <div style={{ fontSize: 13, color: 'var(--color-text-muted)', fontFamily: 'var(--font-sans)' }}>
@@ -855,7 +855,7 @@ export function SessionView({
                 transition: 'all 200ms ease',
               }}
             >
-              <Mic size={shouldDefaultVoice ? 32 : 24} color="#fff" />
+              <Mic size={shouldDefaultVoice ? 32 : 24} color="var(--color-white)" />
             </button>
             {shouldDefaultVoice && (
               <span
@@ -887,7 +887,7 @@ export function SessionView({
           >
             <FileText size={16} style={{ color: 'var(--color-electric-blue)', flexShrink: 0 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#E8EDF5', fontFamily: 'var(--font-sans)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-inverse, #E8EDF5)', fontFamily: 'var(--font-sans)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {uploadedFile.name}
               </div>
               <div style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>
@@ -901,7 +901,7 @@ export function SessionView({
                 background: 'var(--color-electric-blue)',
                 border: 'none',
                 borderRadius: 'var(--radius-md)',
-                color: '#fff',
+                color: 'var(--color-white)',
                 fontSize: 12,
                 fontWeight: 600,
                 fontFamily: 'var(--font-sans)',
@@ -1034,7 +1034,7 @@ export function SessionView({
                 background: 'transparent',
                 border: 'none',
                 outline: 'none',
-                color: '#E8EDF5',
+                color: 'var(--text-inverse, #E8EDF5)',
                 fontFamily: 'var(--font-sans)',
                 fontSize: 13,
                 lineHeight: '20px',

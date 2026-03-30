@@ -73,7 +73,7 @@ export function Sidebar({
               justifyContent: 'center',
               fontWeight: 800,
               fontSize: 14,
-              color: '#fff',
+              color: 'var(--color-white)',
             }}
           >
             T
@@ -82,7 +82,7 @@ export function Sidebar({
             style={{
               fontWeight: 700,
               fontSize: 15,
-              color: '#E8EDF5',
+              color: 'var(--text-inverse, #E8EDF5)',
               letterSpacing: '-0.01em',
             }}
           >

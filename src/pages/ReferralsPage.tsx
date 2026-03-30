@@ -5,7 +5,6 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
-import api from '@/lib/api';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://api.trust-agent.ai';
 

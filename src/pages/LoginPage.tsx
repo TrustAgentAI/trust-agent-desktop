@@ -39,9 +39,68 @@ export function LoginPage() {
     }
   };
 
+  // Load Google Identity Services script
+  React.useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) return;
+    if (document.getElementById('gsi-script')) return;
+
+    const script = document.createElement('script');
+    script.id = 'gsi-script';
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  }, []);
+
   const handleGoogleSignIn = () => {
     clearError();
-    loginWithGoogle();
+
+    // If Google Client ID is configured, use GSI popup
+    if (GOOGLE_CLIENT_ID && window.google?.accounts?.oauth2) {
+      const client = window.google.accounts.oauth2.initCodeClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: 'openid email profile',
+        ux_mode: 'popup',
+        callback: async (response: { code?: string; error?: string }) => {
+          if (response.error || !response.code) {
+            useAuthStore.setState({
+              error: 'Google sign-in was cancelled or failed.',
+              isLoading: false,
+            });
+            return;
+          }
+
+          useAuthStore.setState({ isLoading: true });
+          try {
+            const result = await handleGoogleCallback(response.code);
+            saveSession(result);
+            useAuthStore.setState({
+              token: result.token,
+              refreshToken: result.refreshToken,
+              user: result.user,
+              isAuthenticated: true,
+              isLoading: false,
+            });
+
+            // New users go to onboarding
+            if (!result.user.onboardingDone) {
+              try {
+                localStorage.removeItem('ta_onboarding_completed');
+              } catch { /* ignore */ }
+            }
+          } catch (err) {
+            useAuthStore.setState({
+              error: err instanceof Error ? err.message : 'Google sign-in failed.',
+              isLoading: false,
+            });
+          }
+        },
+      });
+      client.requestCode();
+    } else {
+      // Fallback to redirect-based OAuth
+      loginWithGoogle();
+    }
   };
 
   const handleSignUp = () => {
@@ -237,7 +296,7 @@ export function LoginPage() {
                   : 'var(--color-electric-blue)',
               border: 'none',
               borderRadius: 'var(--radius-md)',
-              color: '#fff',
+              color: 'var(--color-white)',
               fontFamily: 'var(--font-sans)',
               fontWeight: 600,
               fontSize: 15,
@@ -289,7 +348,7 @@ export function LoginPage() {
               background: 'var(--color-navy-2)',
               border: '1px solid var(--color-mid-blue)',
               borderRadius: 'var(--radius-md)',
-              color: '#E8EDF5',
+              color: 'var(--text-inverse, #E8EDF5)',
               fontFamily: 'var(--font-sans)',
               fontWeight: 600,
               fontSize: 14,
@@ -360,7 +419,7 @@ const inputStyle: React.CSSProperties = {
   background: 'var(--color-navy-2)',
   border: '1px solid var(--color-mid-blue)',
   borderRadius: 'var(--radius-md)',
-  color: '#E8EDF5',
+  color: 'var(--text-inverse, #E8EDF5)',
   fontFamily: 'var(--font-sans)',
   fontSize: 14,
   outline: 'none',

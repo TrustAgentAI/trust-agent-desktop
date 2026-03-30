@@ -1,0 +1,94 @@
+{
+  "nav": {
+    "chat": "Chat",
+    "tasks": "Taken",
+    "marketplace": "Marktplaats",
+    "permissions": "Machtigingen",
+    "settings": "Instellingen"
+  },
+  "sidebar": {
+    "hired_roles": "Ingehuurde rollen",
+    "add_role": "Rol toevoegen",
+    "no_roles": "Geen rollen ingehuurd",
+    "tier_free": "GRATIS",
+    "tier_pro": "PRO",
+    "tier_ent": "ENT"
+  },
+  "chat": {
+    "send": "Versturen",
+    "placeholder": "Typ een bericht...",
+    "thinking": "Aan het denken...",
+    "clear_history": "Geschiedenis wissen",
+    "export_chat": "Chat exporteren"
+  },
+  "tasks": {
+    "title": "Taken",
+    "add_task": "Taak toevoegen",
+    "in_progress": "Bezig",
+    "completed": "Voltooid",
+    "pending": "In afwachting",
+    "no_tasks": "Nog geen taken"
+  },
+  "marketplace": {
+    "browse": "Agents bekijken",
+    "search_placeholder": "Agents zoeken...",
+    "hire": "Inhuren",
+    "install": "Installeren",
+    "trust_score": "Vertrouwensscore",
+    "price": "Prijs",
+    "free": "Gratis",
+    "categories": "Categorie\u00ebn",
+    "filter": "Filter",
+    "sort": "Sorteren"
+  },
+  "permissions": {
+    "title": "Machtigingen",
+    "granted": "Verleend",
+    "denied": "Geweigerd",
+    "pending_review": "In beoordeling",
+    "file_access": "Bestandstoegang",
+    "network_access": "Netwerktoegang",
+    "system_access": "Systeemtoegang"
+  },
+  "settings": {
+    "title": "Instellingen",
+    "general": "Algemeen",
+    "appearance": "Uiterlijk",
+    "language": "Taal",
+    "notifications": "Meldingen",
+    "api_keys": "API-sleutels",
+    "about": "Over",
+    "theme": "Thema",
+    "dark_mode": "Donkere modus",
+    "light_mode": "Lichte modus"
+  },
+  "connection": {
+    "connected": "Verbonden",
+    "disconnected": "Niet verbonden",
+    "reconnecting": "Opnieuw verbinden...",
+    "gateway_url": "Gateway-URL"
+  },
+  "common": {
+    "loading": "Laden...",
+    "error": "Er is iets misgegaan",
+    "retry": "Opnieuw proberen",
+    "save": "Opslaan",
+    "cancel": "Annuleren",
+    "confirm": "Bevestigen",
+    "back": "Terug",
+    "next": "Volgende",
+    "search": "Zoeken",
+    "no_results": "Geen resultaten gevonden",
+    "close": "Sluiten",
+    "open": "Openen",
+    "delete": "Verwijderen",
+    "edit": "Bewerken"
+  },
+  "auth": {
+    "signin": "Inloggen",
+    "signup": "Registreren",
+    "logout": "Uitloggen",
+    "email": "E-mail",
+    "password": "Wachtwoord"
+  }
+}

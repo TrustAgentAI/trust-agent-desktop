@@ -1,9 +1,8 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Crown, Check, ArrowLeft, Loader2 } from 'lucide-react';
+import { Crown, Check, ArrowLeft } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Skeleton } from '@/components/ui/Skeleton';
 import api from '@/lib/api';
 
 type PlanKey = 'STARTER' | 'ESSENTIAL' | 'FAMILY' | 'PROFESSIONAL';

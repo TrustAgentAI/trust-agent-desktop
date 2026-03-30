@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Gift, ArrowLeft, Mail, MessageSquare, Crown } from 'lucide-react';
+import { Gift, ArrowLeft, Mail, Crown } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';

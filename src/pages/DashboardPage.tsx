@@ -1,16 +1,76 @@
 import React from 'react';
 import { Users, MessageSquare, Wifi, WifiOff } from 'lucide-react';
 import { useAgentStore } from '@/store/agentStore';
+import type { HiredRole as StoreHiredRole } from '@/store/agentStore';
 import { useAuditStore } from '@/store/auditStore';
+import { gateway } from '@/lib/gateway';
 import { wsClient } from '@/lib/ws';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState, GhostCard } from '@/components/ui/EmptyState';
 
+/** Normalised shape used in the dashboard UI */
+interface DashboardRole {
+  hireId: string;
+  roleName: string;
+  roleCategory: string;
+  trustBadge: string;
+}
+
+/** Map gateway HiredRole to dashboard shape */
+function normaliseGatewayRole(r: { id: string; name: string; title: string; tier: string }): DashboardRole {
+  return {
+    hireId: r.id,
+    roleName: r.name,
+    roleCategory: r.title,
+    trustBadge: r.tier === 'professional' ? 'GOLD' : r.tier === 'enterprise' ? 'PLATINUM' : 'BASIC',
+  };
+}
+
+/** Map agentStore HiredRole to dashboard shape (fallback) */
+function normaliseStoreRole(r: StoreHiredRole): DashboardRole {
+  return {
+    hireId: r.hireId,
+    roleName: r.roleName,
+    roleCategory: r.roleCategory,
+    trustBadge: r.trustBadge,
+  };
+}
+
 export function DashboardPage() {
-  const { roles: hiredRoles } = useAgentStore();
+  const storeRoles = useAgentStore((s) => s.roles);
   const { events } = useAuditStore();
   const navigate = useNavigate();
   const [wsStatus, setWsStatus] = React.useState<string>('Disconnected');
+  const [hiredRoles, setHiredRoles] = React.useState<DashboardRole[]>(
+    storeRoles.map(normaliseStoreRole),
+  );
+
+  // Fetch hired roles from gateway API, falling back to agentStore
+  React.useEffect(() => {
+    let cancelled = false;
+    gateway.roles
+      .listHired()
+      .then((apiRoles) => {
+        if (!cancelled) {
+          setHiredRoles(apiRoles.map(normaliseGatewayRole));
+        }
+      })
+      .catch(() => {
+        // API unavailable - keep using agentStore data (already set as initial state)
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Keep in sync when agentStore changes (e.g. after a new hire)
+  React.useEffect(() => {
+    setHiredRoles((prev) => {
+      // Only update from store if we never got API data
+      if (prev.length === 0 && storeRoles.length > 0) {
+        return storeRoles.map(normaliseStoreRole);
+      }
+      return prev;
+    });
+  }, [storeRoles]);
 
   React.useEffect(() => {
     const interval = setInterval(() => {
@@ -32,7 +92,7 @@ export function DashboardPage() {
     READ: 'var(--color-text-muted)',
     WRITE: 'var(--color-electric-blue)',
     API_CALL: 'var(--color-ion-cyan)',
-    TOOL_USE: '#FFB740',
+    TOOL_USE: 'var(--color-warning, #FFB740)',
     MESSAGE: 'var(--color-text-muted)',
     ERROR: 'var(--color-error)',
   };
@@ -44,7 +104,7 @@ export function DashboardPage() {
           fontSize: '20px',
           fontWeight: 800,
           fontFamily: 'var(--font-sans)',
-          color: '#E8EDF5',
+          color: 'var(--text-inverse, #E8EDF5)',
           marginBottom: 20,
         }}
       >
@@ -131,7 +191,7 @@ export function DashboardPage() {
 
         {hiredRoles.length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
-            {hiredRoles.map((role: { hireId: string; roleName: string; roleCategory: string; trustBadge: string }) => (
+            {hiredRoles.map((role) => (
               <div
                 key={role.hireId}
                 style={{
@@ -141,7 +201,7 @@ export function DashboardPage() {
                   borderRadius: 'var(--radius-lg)',
                 }}
               >
-                <div style={{ fontSize: '14px', fontWeight: 800, color: '#E8EDF5', marginBottom: 4 }}>
+                <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-inverse, #E8EDF5)', marginBottom: 4 }}>
                   {role.roleName}
                 </div>
                 <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: 4 }}>
@@ -265,7 +325,7 @@ export function DashboardPage() {
                   >
                     {event.action}
                   </span>
-                  <span style={{ fontSize: '12px', color: '#E8EDF5' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text-inverse, #E8EDF5)' }}>
                     {event.description}
                   </span>
                 </div>

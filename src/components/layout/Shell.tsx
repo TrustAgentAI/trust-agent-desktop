@@ -98,7 +98,7 @@ export function Shell({ children }: ShellProps) {
                 justifyContent: 'center',
                 fontWeight: 800,
                 fontSize: 14,
-                color: '#fff',
+                color: 'var(--color-white)',
               }}
             >
               TA
@@ -107,7 +107,7 @@ export function Shell({ children }: ShellProps) {
               style={{
                 fontWeight: 700,
                 fontSize: 15,
-                color: '#E8EDF5',
+                color: 'var(--text-inverse, #E8EDF5)',
                 letterSpacing: '-0.01em',
               }}
             >
@@ -266,7 +266,7 @@ export function Shell({ children }: ShellProps) {
                 style={{
                   fontSize: 12,
                   fontWeight: 600,
-                  color: '#E8EDF5',
+                  color: 'var(--text-inverse, #E8EDF5)',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
@@ -424,8 +424,8 @@ function SidebarRoleCard({
 
   const badgeConfig = {
     PLATINUM: { bg: 'rgba(0,212,255,0.15)', color: 'var(--color-ion-cyan)' },
-    GOLD: { bg: 'rgba(255,183,64,0.15)', color: '#FFB740' },
-    SILVER: { bg: 'rgba(192,200,216,0.15)', color: '#C0C8D8' },
+    GOLD: { bg: 'rgba(255,183,64,0.15)', color: 'var(--color-warning, #FFB740)' },
+    SILVER: { bg: 'rgba(192,200,216,0.15)', color: 'var(--color-text-muted, #C0C8D8)' },
     BASIC: { bg: 'rgba(136,153,187,0.15)', color: 'var(--color-text-muted)' },
   }[role.trustBadge];
 
