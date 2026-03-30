@@ -33,6 +33,7 @@ import { featureFlagsRouter } from './feature-flags';
 import { storiesRouter } from './stories';
 import { nhsRouter } from './nhs';
 import { creatorRouter } from './creator';
+import { personalityRouter } from './personality';
 
 export const appRouter = router({
   auth: authRouter,
@@ -69,6 +70,7 @@ export const appRouter = router({
   stories: storiesRouter,
   nhs: nhsRouter,
   creator: creatorRouter,
+  personality: personalityRouter,
 });
 
 export type AppRouter = typeof appRouter;

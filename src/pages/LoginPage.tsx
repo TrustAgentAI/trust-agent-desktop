@@ -6,8 +6,12 @@ import {
   saveRememberedEmail,
   getRememberedEmail,
   clearRememberedEmail,
+  handleGoogleCallback,
+  saveSession,
 } from '@/lib/auth';
 import { HeroSection } from '@/components/layout/HeroSection';
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 export function LoginPage() {
   const rememberedEmail = React.useMemo(() => getRememberedEmail(), []);

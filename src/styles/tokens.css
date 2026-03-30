@@ -1,0 +1,147 @@
+/* ============================================================
+   Trust Agent - Warm Stone Design System Tokens
+   Applied globally. Never use raw hex in components.
+   ============================================================ */
+
+:root {
+  /* ---- Typography ---- */
+  --font-serif: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* ---- Page backgrounds ---- */
+  --bg-page: #FAFAF8;
+  --bg-surface: #F4F3EF;
+  --bg-elevated: #FFFFFF;
+
+  /* ---- Primary palette ---- */
+  --primary-50: #E8F0F5;
+  --primary-100: #C5D9E8;
+  --primary-200: #9FBFD8;
+  --primary-300: #6FA0C4;
+  --primary-400: #4A87B3;
+  --primary-500: #1F6D9B;
+  --primary-600: #1A5276;
+  --primary-700: #143F5B;
+  --primary-800: #0E2D42;
+  --primary-900: #081C2B;
+
+  /* ---- Accent (success / Platinum badge) ---- */
+  --accent-50: #E8F6EC;
+  --accent-100: #C5E8CE;
+  --accent-200: #9DD8AD;
+  --accent-300: #6DC48A;
+  --accent-400: #48B46E;
+  --accent-500: #229A4A;
+  --accent-600: #1D7A35;
+  --accent-700: #165C28;
+  --accent-800: #10401C;
+  --accent-900: #092610;
+
+  /* ---- Text ---- */
+  --text-primary: #1A1A18;
+  --text-secondary: #4A4A46;
+  --text-muted: #7A7A74;
+  --text-inverse: #FFFFFF;
+
+  /* ---- Borders ---- */
+  --border-default: #E2E1DC;
+  --border-strong: #C8C6BF;
+  --border-focus: var(--primary-600);
+
+  /* ---- Radius ---- */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-card: 20px;
+  --radius-pill: 40px;
+  --radius-full: 9999px;
+
+  /* ---- Shadows ---- */
+  --shadow-card: 0 8px 28px rgba(12, 24, 16, 0.09);
+  --shadow-sm: 0 1px 3px rgba(12, 24, 16, 0.06);
+  --shadow-md: 0 4px 14px rgba(12, 24, 16, 0.08);
+  --shadow-lg: 0 12px 40px rgba(12, 24, 16, 0.12);
+  --shadow-elevated: 0 16px 48px rgba(12, 24, 16, 0.14);
+
+  /* ---- Spacing scale ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---- Category colours ---- */
+  --cat-education: #1A5C4A;
+  --cat-education-bg: #F5F9F7;
+
+  --cat-health: #3D7A5E;
+  --cat-health-bg: #F2F9F5;
+
+  --cat-children: #9E7209;
+  --cat-children-bg: #FEFBF0;
+
+  --cat-language: #5B4A8A;
+  --cat-language-bg: #F5F3FC;
+
+  --cat-business: #2E4057;
+  --cat-business-bg: #F2F5F9;
+
+  --cat-career: #8B2635;
+  --cat-career-bg: #FDF4F5;
+
+  --cat-elderly: #B86E20;
+  --cat-elderly-bg: #FEF8F2;
+
+  --cat-navigation: #1A6B7A;
+  --cat-navigation-bg: #EEF8FA;
+
+  /* ---- Status colours ---- */
+  --color-success: #1D7A35;
+  --color-warning: #B86E20;
+  --color-error: #B82525;
+  --color-info: #1A5276;
+
+  /* ---- Z-index scale ---- */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-announcement: 600;
+
+  /* ---- Transitions ---- */
+  --transition-fast: 120ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 350ms ease;
+}
+
+/* ---- Animations for Warm Stone system ---- */
+@keyframes ws-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ws-slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ws-slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ws-slideInRight {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes ws-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
