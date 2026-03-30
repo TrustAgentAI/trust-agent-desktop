@@ -30,6 +30,9 @@ import { healthRouter } from './health';
 import { pricingRouter } from './pricing';
 import { systemRouter } from './system';
 import { featureFlagsRouter } from './feature-flags';
+import { storiesRouter } from './stories';
+import { nhsRouter } from './nhs';
+import { creatorRouter } from './creator';
 
 export const appRouter = router({
   auth: authRouter,
@@ -63,6 +66,9 @@ export const appRouter = router({
   pricing: pricingRouter,
   system: systemRouter,
   featureFlags: featureFlagsRouter,
+  stories: storiesRouter,
+  nhs: nhsRouter,
+  creator: creatorRouter,
 });
 
 export type AppRouter = typeof appRouter;

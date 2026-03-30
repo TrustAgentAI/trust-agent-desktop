@@ -311,9 +311,8 @@ export const paymentsRouter = router({
         data: {
           userId: ctx.user.id,
           action: 'subscription.cancel_requested',
-          entityType: 'User',
-          entityId: ctx.user.id,
-          newValue: { reason: input.reason, tier: user.subscriptionTier },
+          resource: `user:${ctx.user.id}`,
+          details: { reason: input.reason, tier: user.subscriptionTier },
         },
       });
 

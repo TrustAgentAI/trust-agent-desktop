@@ -256,7 +256,7 @@ export const onboardingRouter = router({
     }),
 
   // ── Phase 2: Onboarding checkpoint tracking ──────────────────────────────
-  trackCheckpoint: publicProcedure
+  trackOnboardingCheckpoint: publicProcedure
     .input(z.object({
       step: z.string(),
       userId: z.string().optional(),
@@ -264,19 +264,18 @@ export const onboardingRouter = router({
       recommendedSlug: z.string().optional(),
       device: z.string().optional(),
       referralSource: z.string().optional(),
-      durationSeconds: z.number().optional(),
       quizAnswers: z.record(z.unknown()).optional(),
     }))
-    .mutation(async ({ ctx, input }) => {
-      return trackCheckpoint(input.step, {
+    .mutation(async ({ input }) => {
+      await trackCheckpoint(input.step as Parameters<typeof trackCheckpoint>[0], {
         userId: input.userId,
         sessionToken: input.sessionToken,
         recommendedSlug: input.recommendedSlug,
         device: input.device,
         referralSource: input.referralSource,
-        durationSeconds: input.durationSeconds,
         quizAnswers: input.quizAnswers,
       });
+      return { success: true };
     }),
 
   // ── Phase 8: Mobile Handoff Flow (90-second setup for elderly users) ────

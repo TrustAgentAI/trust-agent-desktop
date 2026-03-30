@@ -318,4 +318,58 @@ export const schoolRouter = router({
         enrolmentId: validEnrolment?.id || null,
       };
     }),
+
+  // ── Phase 9: School Leaderboard (anonymised streak rankings) ─────────────
+  getLeaderboard: protectedProcedure
+    .input(z.object({ schoolId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      // Get current week
+      const now = new Date();
+      const day = now.getDay();
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+      const periodStart = new Date(now);
+      periodStart.setDate(diff);
+      periodStart.setHours(0, 0, 0, 0);
+
+      const leaderboard = await ctx.prisma.schoolLeaderboard.findFirst({
+        where: {
+          schoolId: input.schoolId,
+          periodStart: { gte: periodStart },
+        },
+        orderBy: { generatedAt: 'desc' },
+      });
+
+      if (!leaderboard) {
+        return { entries: [], generatedAt: null, periodStart: null, periodEnd: null };
+      }
+
+      // Find calling user's position (by matching their streak data)
+      const userHire = await ctx.prisma.hire.findFirst({
+        where: { userId: ctx.user.id, status: 'ACTIVE' },
+        orderBy: { streakDays: 'desc' },
+        select: { streakDays: true },
+      });
+
+      const entries = leaderboard.entries as Array<{ rank: number; streakDays: number; subjectEmoji: string; anonymousId: string }>;
+      const myPosition = userHire
+        ? entries.find(e => e.streakDays === userHire.streakDays)?.rank ?? null
+        : null;
+
+      return {
+        entries,
+        myPosition,
+        generatedAt: leaderboard.generatedAt,
+        periodStart: leaderboard.periodStart,
+        periodEnd: leaderboard.periodEnd,
+      };
+    }),
+
+  // Admin: generate leaderboard for a school
+  generateLeaderboard: adminProcedure
+    .input(z.object({ schoolId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { generateSchoolLeaderboard } = await import('../lib/schools/generateLeaderboard');
+      await generateSchoolLeaderboard(input.schoolId);
+      return { success: true };
+    }),
 });
