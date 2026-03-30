@@ -29,6 +29,12 @@ model User {
   cloudDriveType    CloudDriveType?  // REQUIRED before first hire
   cloudDriveToken   String?     @db.Text  // Encrypted OAuth token
   cloudDriveFolderId String?    // Folder ID in user's drive for Brain files
+  // Vision features
+  firstName         String?     // For stories/display
+  city              String?     // For stories/display
+  subscriptionTier  String?     // 'starter'|'essential'|'family'|'professional'
+  stripeSubscriptionId String?  // Stripe subscription ID
+  scheduledCancellationAt DateTime? // When cancellation was requested
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
@@ -61,6 +67,7 @@ model User {
   quizResponses        QuizResponse[]
   companionReviews     CompanionReview[]
   progressShares       ProgressShare[]
+  creatorStories       CreatorStory[]
 
   // Push notification subscription (VAPID)
   vapidSubscription    Json?   // Web Push subscription object
@@ -343,6 +350,7 @@ model Role {
   creator   CreatorProfile? @relation(fields: [creatorId], references: [id])
   studyGroups StudyGroup[]
   reAuditTriggers CompanionReAuditTrigger[]
+  creatorStories  CreatorStory[]
 
   @@index([baseSlug])
   @@index([category])
@@ -404,6 +412,11 @@ model RoleAudit {
   communityScore  Int      @default(0)
   totalScore      Int      // Weighted final Trust Score
   auditedBy       String?  // Human expert name/ID (hashed)
+  // Expert review fields (Phase 5 - Trust Score Felt, Not Just Displayed)
+  expertReviewText       String?  @db.Text  // Full paragraph review from domain expert
+  reviewerName           String?            // "Professor James Whitfield"
+  reviewerCredentials    String?  @db.Text  // "Former Head of Mathematics, University of Edinburgh..."
+  reviewerYearsExperience Int?              // Years of domain expertise
   completedAt     DateTime
   expiresAt       DateTime // 6 months from audit date
   createdAt       DateTime @default(now())
@@ -461,6 +474,7 @@ model Hire {
   brainMemoryEntries  BrainMemoryEntry[]
   companionReviews    CompanionReview[]
   progressShares      ProgressShare[]
+  personalityConfig   CompanionPersonalityConfig?
 
   @@unique([userId, roleId])
   @@index([userId])
@@ -879,6 +893,7 @@ model SchoolLicence {
   createdAt       DateTime @default(now())
 
   enrolments      StudentEnrolment[]
+  leaderboards    SchoolLeaderboard[]
 }
 
 model StudentEnrolment {
@@ -1537,4 +1552,211 @@ enum ReAuditStatus {
   IN_PROGRESS
   COMPLETED
   DISMISSED
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// VISION FEATURES - Phase 1 Models
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── LIVES CHANGED STORIES (the social proof engine) ───────────────────────
+// Real user stories. The homepage quote. The investor proof. The product story.
+// Every touchpoint - user, investor, regulator - draws from this one table.
+model LivesChangedStory {
+  id              String    @id @default(cuid())
+  userId          String?   // null = anonymous
+  firstName       String    // "Patricia", "Jade", "Daniel"
+  city            String?   // "Glasgow", "Manchester"
+  category        String    // 'education'|'health'|'daily'|'career'|'nhs'
+  headline        String    // "Jade went from D to B in 6 weeks"
+  quote           String    @db.Text // The actual user quote
+  outcome         String?   // Specific measurable outcome
+  companionName   String?   // Which companion
+  roleSlug        String?   // Which role
+  verified        Boolean   @default(false)  // Admin verified it's real
+  consentGiven    Boolean   @default(false)  // User consented to publication
+  publishedOn     String[]  // 'homepage'|'pricing'|'investor_deck'|'press'
+  createdAt       DateTime  @default(now())
+  @@index([category])
+  @@index([verified])
+}
+
+// ── ONBOARDING CHECKPOINTS (track Aha Moment arrival) ─────────────────────
+// PLG companies track activation rate obsessively.
+// This table lets us measure time-to-Aha and optimise the funnel.
+model OnboardingCheckpoint {
+  id              String    @id @default(cuid())
+  userId          String?
+  sessionToken    String?   // Pre-auth tracking
+  step            String    // 'landed'|'quiz_started'|'quiz_completed'
+                            // |'companion_viewed'|'hired'|'first_session'
+                            // |'aha_moment_reached'
+  completedAt     DateTime  @default(now())
+  durationSeconds Int?      // Time from previous step
+  quizAnswers     Json?     // Stored at quiz_completed step
+  recommendedSlug String?   // Which companion was recommended
+  device          String?   // 'mobile'|'desktop'|'tablet'
+  referralSource  String?   // utm_source / referral code
+  @@index([userId])
+  @@index([sessionToken])
+  @@index([step])
+  @@index([completedAt])
+}
+
+// ── COMPANION PERSONALITY CONFIG (voice personality per hire) ─────────────
+// Each user can tune their companion's communication style.
+// Not changing the audited system prompt - tuning presentation layer only.
+model CompanionPersonalityConfig {
+  id              String    @id @default(cuid())
+  hireId          String    @unique
+  hire            Hire      @relation(fields: [hireId], references: [id], onDelete: Cascade)
+  // Response style
+  verbosity       String    @default("balanced") // 'concise'|'balanced'|'detailed'
+  formalityLevel  String    @default("warm")     // 'professional'|'warm'|'friendly'
+  encouragement   String    @default("moderate") // 'minimal'|'moderate'|'enthusiastic'
+  // Voice settings
+  voiceMode       String    @default("text")     // 'text'|'voice'|'voice_preferred'
+  voiceId         String?   // ElevenLabs voice ID
+  voiceSpeed      Float     @default(1.0)        // 0.75-1.25
+  // Ambient audio
+  ambientAudio    Boolean   @default(true)
+  ambientVolume   Int       @default(10)         // 0-100
+  // Accessibility
+  highContrast    Boolean   @default(false)
+  largeText       Boolean   @default(false)
+  reducedMotion   Boolean   @default(false)
+  updatedAt       DateTime  @updatedAt
+}
+
+// ── VOICE DEFAULT RULES (voice mode auto-recommended by category) ─────────
+// For elderly/daily companion/language: voice mode is the right default.
+model VoiceDefaultRule {
+  id              String    @id @default(cuid())
+  category        String    @unique // 'elderly'|'daily_companion'|'language'|etc
+  defaultMode     String    // 'voice'|'text'|'voice_preferred'
+  promptText      String    // What to show user when recommending voice
+  iconName        String    // Which icon to display
+  updatedAt       DateTime  @updatedAt
+}
+
+// ── ERROR MESSAGE TEMPLATES (human error messages) ────────────────────────
+// "Something went wrong on our end - your session data is safe, we promise."
+// Every error message is warm, human, reassuring. Not "Error 500".
+model ErrorMessageTemplate {
+  id              String    @id @default(cuid())
+  errorCode       String    @unique // 'session_failed'|'payment_failed'|'connection_lost'
+  userTitle       String    // Short headline
+  userMessage     String    @db.Text // Warm, human explanation
+  technicalNote   String?   // For admin/dev use only (not shown to users)
+  actionLabel     String?   // CTA button text
+  actionUrl       String?   // Where CTA goes
+  safetyNote      String?   // "your session data is safe" - reassurance
+}
+
+// ── MOBILE HANDOFF SESSION (90-second setup for elderly users) ────────────
+// When a daughter sets up the app for her mum.
+// Track the handoff flow separately from normal onboarding.
+model MobileHandoffSession {
+  id              String    @id @default(cuid())
+  setupUserId     String    // The person doing the setup (daughter)
+  targetUserId    String?   // The person who'll use it (mum)
+  companionSlug   String
+  companionName   String    // Custom name given during setup
+  setupCompleted  Boolean   @default(false)
+  setupSteps      String[]  // Steps completed: 'companion_chosen'|'named'|'cloud_connected'
+  completedAt     DateTime?
+  durationSeconds Int?
+  createdAt       DateTime  @default(now())
+  @@index([setupUserId])
+}
+
+// ── SCHOOL LEADERBOARD (anonymised streak rankings) ───────────────────────
+// For school licences - students see their position without names.
+model SchoolLeaderboard {
+  id              String    @id @default(cuid())
+  schoolId        String
+  school          SchoolLicence @relation(fields: [schoolId], references: [id])
+  periodStart     DateTime
+  periodEnd       DateTime
+  entries         Json      // [{ anonymousId, streakDays, rank, subjectEmoji }]
+  generatedAt     DateTime  @default(now())
+  @@unique([schoolId, periodStart])
+  @@index([schoolId])
+  @@index([periodStart])
+}
+
+// ── CREATOR STORIES (the 5 founders, made famous) ─────────────────────────
+// Find the first 5 creators. Document their journey. Make them famous.
+// This is the Notion template creator playbook - the viral loop.
+model CreatorStory {
+  id              String    @id @default(cuid())
+  creatorId       String
+  creator         User      @relation(fields: [creatorId], references: [id])
+  roleSlug        String
+  role            Role      @relation(fields: [roleSlug], references: [slug])
+  headline        String    // "Margaret taught GCSE Maths for 30 years. Now she earns 2k/month while retired."
+  story           String    @db.Text // Full narrative
+  monthlyEarnings Float?    // Their actual earnings (with consent)
+  profession      String    // "Retired GCSE teacher" / "BACP counsellor"
+  publishedOn     String[]  // 'creator_page'|'homepage'|'press'
+  videoUrl        String?   // Link to their video story
+  consentGiven    Boolean   @default(false)
+  isFeature       Boolean   @default(false) // One of the first 5 featured creators
+  createdAt       DateTime  @default(now())
+  @@index([creatorId])
+  @@index([isFeature])
+}
+
+// ── NHS PARTNER PRACTICES (proper NHS integration) ────────────────────────
+// Not just a badge. A real network of GP practices.
+model NHSPartnerPractice {
+  id              String    @id @default(cuid())
+  odsCode         String    @unique // Official NHS ODS code
+  practiceName    String
+  address         String
+  primaryCareNetworkId String?
+  pcnName         String?
+  liaisonName     String?   // Named contact
+  liaisonEmail    String?
+  igComplianceStatus String @default("PENDING") // PENDING|COMPLIANT|AUDIT_REQUIRED
+  pilotStatus     String    @default("NONE")     // NONE|ACTIVE|COMPLETE
+  pilotOutcomeUrl String?   // Published outcome report
+  codesIssued     Int       @default(0)
+  activationsCount Int      @default(0)
+  joinedAt        DateTime  @default(now())
+  @@index([odsCode])
+  @@index([pilotStatus])
+}
+
+// ── UNIFIED STORY LOG (one story, three audiences) ────────────────────────
+// Every user/investor/regulator story drawn from one source of truth.
+// Ensures the company never tells different stories to different audiences.
+model UnifiedStoryLog {
+  id              String    @id @default(cuid())
+  storyType       String    // 'user_impact'|'investor_metric'|'regulatory_proof'
+  audience        String[]  // 'users'|'investors'|'press'|'regulators'|'gps'
+  headline        String
+  content         String    @db.Text
+  evidence        Json?     // Data, citations, screenshots
+  publishedOn     String[]
+  lastVerifiedAt  DateTime?
+  createdAt       DateTime  @default(now())
+  @@index([storyType])
+}
+
+// ── CANCELLATION FEEDBACK (no dark patterns) ──────────────────────────────
+// When someone cancels, ask what could have been better.
+// No dark patterns. No "are you sure?". No countdown timers.
+model CancellationFeedback {
+  id              String    @id @default(cuid())
+  userId          String
+  reason          String    // 'too_expensive'|'not_using_enough'|'found_alternative'
+                            // |'technical_issues'|'personal_circumstances'|'other'
+  freeText        String?   @db.Text
+  wouldReturn     Boolean?
+  suggestedImprovement String? @db.Text
+  subscriptionTier String   // What they were on
+  sessionsCompleted Int      // How much they used it
+  createdAt       DateTime  @default(now())
+  @@index([reason])
+  @@index([createdAt])
 }

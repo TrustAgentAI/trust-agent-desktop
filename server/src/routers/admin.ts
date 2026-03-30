@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { router, adminProcedure } from '../trpc';
 import { safeRoleSelect } from '../lib/safe-role';
+import { getOnboardingFunnelData } from '../lib/onboarding/trackCheckpoint';
 
 export const adminRouter = router({
   listUsers: adminProcedure
@@ -473,5 +474,12 @@ export const adminRouter = router({
         status: trigger.status,
         message: 'Manual re-audit trigger created',
       };
+    }),
+
+  // ── ONBOARDING FUNNEL ANALYTICS ──────────────────────────────────────────
+  getOnboardingFunnel: adminProcedure
+    .input(z.object({ days: z.number().int().min(1).max(90).default(30) }))
+    .query(async ({ input }) => {
+      return getOnboardingFunnelData(input.days);
     }),
 });
