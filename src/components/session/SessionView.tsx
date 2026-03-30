@@ -34,7 +34,8 @@ interface SessionViewProps {
   roleCategory?: string;
 }
 
-const ANTI_DEPENDENCY_MINS = 45;
+const ANTI_DEPENDENCY_WARNING_MINS = 85;
+const ANTI_DEPENDENCY_END_MINS = 90;
 
 // File types accepted for upload
 const ACCEPTED_FILE_TYPES = '.pdf,.doc,.docx,.txt,.md,.png,.jpg,.jpeg,.csv';
@@ -74,6 +75,24 @@ export function SessionView({
   // tRPC session tracking
   const [sessionId, setSessionId] = React.useState<string | null>(null);
 
+  // Phase 5: Brain summary loaded before first message
+  const [brainSummary, setBrainSummary] = React.useState<{
+    sessionCount: number;
+    lastNote: { content: string; nextFocus: string | null } | null;
+    companionName: string;
+  } | null>(null);
+  const [brainLoading, setBrainLoading] = React.useState(false);
+
+  // Phase 5: Session config for background tint
+  const [sessionConfig, setSessionConfig] = React.useState<{
+    backgroundTint?: string;
+    ambientAudioUrl?: string;
+    voiceRecommended?: boolean;
+  } | null>(null);
+
+  // Phase 5: Voice mode recommendation dismissed
+  const [voiceRecommendationDismissed, setVoiceRecommendationDismissed] = React.useState(false);
+
   // Upload state
   const [uploadedFile, setUploadedFile] = React.useState<{ name: string; size: number; type: string; dataUrl: string } | null>(null);
   const [showUploadPreview, setShowUploadPreview] = React.useState(false);
@@ -103,34 +122,103 @@ export function SessionView({
     sessionMood: 'focused',
   };
 
-  // Aha Moment: Inject the personalised first message from onboarding quiz
-  // This runs once when a session starts with a hire that has a stored first message
+  // Phase 5: Load Brain summary BEFORE first message, and session config for tint
   React.useEffect(() => {
-    if (!activeRoleId || messages.length > 0) return;
+    if (!activeRoleId) return;
+    let cancelled = false;
 
-    try {
-      const storedMessage = localStorage.getItem('ta_first_message');
-      const storedRoleId = localStorage.getItem('ta_first_message_role');
+    async function loadBrainAndConfig() {
+      setBrainLoading(true);
+      try {
+        // Load brain summary and session config in parallel
+        const [brainRes, configRes] = await Promise.all([
+          api.post<Record<string, unknown>>('/api/trpc/brain.getBrainSummary', {
+            json: { hireId: activeRoleId },
+          }).catch(() => null),
+          api.post<Record<string, unknown>>('/api/trpc/sessions.getSessionConfig', {
+            json: { hireId: activeRoleId },
+          }).catch(() => null),
+        ]);
 
-      if (storedMessage && storedRoleId) {
-        // Inject the Aha Moment first message as the companion's opening
-        const ahaMessage: ChatMessageData = {
-          id: `aha-${Date.now()}`,
-          role: 'agent',
-          content: storedMessage,
-          timestamp: Date.now(),
-          metadata: { isAhaMoment: true },
-        };
-        addMessage(activeRoleId, ahaMessage);
+        if (cancelled) return;
 
-        // Clear stored first message so it only fires once
-        localStorage.removeItem('ta_first_message');
-        localStorage.removeItem('ta_first_message_role');
+        // Parse brain summary
+        const brainData = (brainRes as Record<string, unknown>)?.result
+          ? ((brainRes as Record<string, unknown>).result as Record<string, unknown>)?.data
+          : brainRes;
+        if (brainData && typeof brainData === 'object') {
+          const bd = brainData as Record<string, unknown>;
+          setBrainSummary({
+            sessionCount: (bd.sessionCount as number) || 0,
+            lastNote: bd.lastNote as { content: string; nextFocus: string | null } | null,
+            companionName: (bd.companionName as string) || '',
+          });
+        }
+
+        // Parse session config for background tint
+        const configData = (configRes as Record<string, unknown>)?.result
+          ? ((configRes as Record<string, unknown>).result as Record<string, unknown>)?.data
+          : configRes;
+        if (configData && typeof configData === 'object') {
+          const cd = configData as Record<string, unknown>;
+          setSessionConfig({
+            backgroundTint: cd.backgroundTint as string | undefined,
+            ambientAudioUrl: cd.ambientAudioUrl as string | undefined,
+            voiceRecommended: cd.voiceRecommended as boolean | undefined,
+          });
+        }
+      } catch {
+        // API may not be available - continue without brain data
+      } finally {
+        if (!cancelled) setBrainLoading(false);
       }
-    } catch {
-      // Storage access may fail
     }
-  }, [activeRoleId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    loadBrainAndConfig();
+    return () => { cancelled = true; };
+  }, [activeRoleId]);
+
+  // Phase 5: Inject personalised first message from brain summary or onboarding
+  // Returning users get memory-referencing message; new users get Aha Moment
+  React.useEffect(() => {
+    if (!activeRoleId || messages.length > 0 || brainLoading) return;
+
+    // Wait until brain summary has loaded (or failed)
+    if (brainSummary === null && brainLoading) return;
+
+    let firstMsgContent: string | null = null;
+
+    if (brainSummary && brainSummary.sessionCount > 0 && brainSummary.lastNote) {
+      // Returning user: reference what the companion remembers
+      const nextFocus = brainSummary.lastNote.nextFocus;
+      firstMsgContent = nextFocus
+        ? brainSummary.lastNote.content + (nextFocus ? ` Today, let's focus on: ${nextFocus}` : '')
+        : brainSummary.lastNote.content;
+    } else {
+      // First session: check for stored Aha Moment from onboarding
+      try {
+        const storedMessage = localStorage.getItem('ta_first_message');
+        if (storedMessage) {
+          firstMsgContent = storedMessage;
+          localStorage.removeItem('ta_first_message');
+          localStorage.removeItem('ta_first_message_role');
+        }
+      } catch {
+        // Storage access may fail
+      }
+    }
+
+    if (firstMsgContent && activeRoleId) {
+      const ahaMessage: ChatMessageData = {
+        id: `aha-${Date.now()}`,
+        role: 'agent',
+        content: firstMsgContent,
+        timestamp: Date.now(),
+        metadata: { isAhaMoment: brainSummary?.sessionCount === 0 },
+      };
+      addMessage(activeRoleId, ahaMessage);
+    }
+  }, [activeRoleId, brainSummary, brainLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Session timer with anti-dependency checks
   React.useEffect(() => {
@@ -139,8 +227,8 @@ export function SessionView({
       setSessionElapsed(elapsed);
       const elapsedMinutes = Math.floor(elapsed / 60);
 
-      // Anti-dependency reminder at 45 minutes (legacy)
-      if (elapsed >= ANTI_DEPENDENCY_MINS * 60 && !showDependencyReminder) {
+      // Anti-dependency reminder at 85 minutes (Phase 5: 85min warning, 90min end)
+      if (elapsed >= ANTI_DEPENDENCY_WARNING_MINS * 60 && !showDependencyReminder) {
         setShowDependencyReminder(true);
       }
 
@@ -528,9 +616,45 @@ export function SessionView({
 
   const accent = envConfig.categoryAccentColor || 'var(--color-electric-blue)';
 
+  // Phase 5: Apply background tint from sessions.getSessionConfig
+  const bgTintStyle: React.CSSProperties = sessionConfig?.backgroundTint
+    ? { background: sessionConfig.backgroundTint }
+    : {};
+
+  // Phase 5: Should show voice mode recommendation
+  const showVoiceRecommendation = !voiceRecommendationDismissed && !voiceActive && (
+    shouldDefaultVoice || sessionConfig?.voiceRecommended
+  );
+
   return (
     <EnvironmentRenderer config={envConfig}>
-      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', ...bgTintStyle }}>
+        {/* Phase 5: Voice mode recommendation for elderly/daily/language users */}
+        {showVoiceRecommendation && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '8px 20px',
+              background: 'rgba(30,111,255,0.08)',
+              borderBottom: '1px solid rgba(30,111,255,0.15)',
+              flexShrink: 0,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--color-electric-blue)', fontFamily: 'var(--font-sans)' }}>
+              <Mic size={14} />
+              <span>Voice mode is recommended for this session type. Tap the microphone to start speaking.</span>
+            </div>
+            <button
+              onClick={() => setVoiceRecommendationDismissed(true)}
+              style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: 4 }}
+              aria-label="Dismiss voice recommendation"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
         {/* Session header bar */}
         <div
           style={{
@@ -552,7 +676,7 @@ export function SessionView({
                 gap: 4,
                 fontSize: 11,
                 fontFamily: 'var(--font-mono)',
-                color: sessionElapsed >= ANTI_DEPENDENCY_MINS * 60
+                color: sessionElapsed >= ANTI_DEPENDENCY_WARNING_MINS * 60
                   ? 'var(--color-error)'
                   : 'var(--color-text-muted)',
               }}

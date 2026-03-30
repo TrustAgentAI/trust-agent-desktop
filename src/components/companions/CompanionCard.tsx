@@ -6,7 +6,6 @@
  * 4. Trust score bar
  * + Hire CTA always visible
  */
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const CATEGORY_COLOURS: Record<string, { accent: string; bg: string }> = {

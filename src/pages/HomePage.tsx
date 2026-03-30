@@ -33,7 +33,7 @@ interface RoleCard {
   companionName: string;
   tagline: string;
   category: string;
-  emoji: string | null;
+  emoji?: string | null;
   priceMonthly: number;
   audit?: { trustScore: number; badge: string; totalScore: number } | null;
 }
@@ -468,7 +468,7 @@ function FeaturedRoles({ roles }: { roles: RoleCard[] }) {
             companionName={role.companionName}
             tagline={role.tagline}
             category={role.category}
-            emoji={role.emoji}
+            emoji={role.emoji ?? null}
             trustScore={role.audit?.trustScore ?? 0}
             badge={role.audit?.badge ?? 'BASIC'}
             priceMonthly={role.priceMonthly}
@@ -853,7 +853,7 @@ export function HomePage() {
   );
 
   const featuredRoles = useTrpcQuery(
-    () => trpc.roles.getFeatured.query({ limit: 8 }),
+    () => trpc.roles.getFeatured.query({ limit: 8 }) as Promise<RoleCard[]>,
     [],
   );
 

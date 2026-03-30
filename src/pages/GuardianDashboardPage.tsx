@@ -13,11 +13,12 @@ import {
   Settings,
   Plus,
   Eye,
-  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { api } from '@/lib/api';
+import { getErrorMessage } from '@/components/ui/Toast';
 
 // ── Types from API ──
 interface LinkedChild {
@@ -210,6 +211,7 @@ export function GuardianDashboardPage() {
   const [activity, setActivity] = React.useState<ChildActivity | null>(null);
   const [selectedChildId, setSelectedChildId] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState<string | null>(null);
   const [showAddModal, setShowAddModal] = React.useState(false);
   const [showTimeLimitEditor, setShowTimeLimitEditor] = React.useState(false);
   const [timeLimitValue, setTimeLimitValue] = React.useState(45);
@@ -231,7 +233,7 @@ export function GuardianDashboardPage() {
           setSelectedChildId(childrenData[0].childId);
         }
       } catch {
-        // API may not be available yet
+        setLoadError(getErrorMessage());
       } finally {
         setLoading(false);
       }
@@ -281,8 +283,35 @@ export function GuardianDashboardPage() {
 
   if (loading) {
     return (
+      <div style={{ flex: 1, padding: 24 }}>
+        <Skeleton height={28} width="220px" style={{ marginBottom: 8 }} />
+        <Skeleton height={14} width="340px" style={{ marginBottom: 24 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+          <Skeleton height={100} borderRadius="var(--radius-lg)" />
+          <Skeleton height={100} borderRadius="var(--radius-lg)" />
+          <Skeleton height={100} borderRadius="var(--radius-lg)" />
+          <Skeleton height={100} borderRadius="var(--radius-lg)" />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <Skeleton height={200} borderRadius="var(--radius-lg)" />
+          <Skeleton height={200} borderRadius="var(--radius-lg)" />
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
-        <Loader2 size={32} style={{ color: 'var(--color-electric-blue)', animation: 'spin 1s linear infinite' }} />
+        <div style={{ textAlign: 'center' }}>
+          <AlertTriangle size={32} style={{ color: 'var(--color-error)', marginBottom: 12 }} />
+          <div style={{ fontSize: 14, color: 'var(--color-error)', fontFamily: 'var(--font-sans)', marginBottom: 12 }}>
+            {loadError}
+          </div>
+          <Button variant="ghost" size="md" onClick={() => window.location.reload()}>
+            Try Again
+          </Button>
+        </div>
       </div>
     );
   }

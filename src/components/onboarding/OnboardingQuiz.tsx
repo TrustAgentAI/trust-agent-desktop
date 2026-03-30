@@ -195,12 +195,23 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
     (step === 2 && level !== null) ||
     step === 3;
 
+  // Phase 4: Track each onboarding step via tRPC checkpoint
+  const trackCheckpoint = React.useCallback((checkpoint: string, meta?: Record<string, unknown>) => {
+    api.post('/api/trpc/onboarding.trackOnboardingCheckpoint', {
+      json: { checkpoint, metadata: meta ?? {} },
+    }).catch(() => { /* best-effort tracking */ });
+  }, []);
+
   const handleNext = async () => {
     if (step < STEPS.length - 2) {
-      // Steps 0 and 1 - just advance
+      // Steps 0 and 1 - advance and track checkpoint
+      const checkpointName = step === 0 ? 'goal_selected' : 'audience_selected';
+      const checkpointMeta = step === 0 ? { goal } : { audience };
+      trackCheckpoint(checkpointName, checkpointMeta);
       setStep(step + 1);
     } else if (step === 2 && goal && audience && level) {
-      // Submit quiz to server and get recommendation
+      // Track level checkpoint then submit quiz to server
+      trackCheckpoint('level_selected', { level });
       setSubmitting(true);
       setSubmitError(null);
       try {
@@ -223,6 +234,7 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
         if (data.matchScore) {
           setMatchScore(data.matchScore);
         }
+        trackCheckpoint('quiz_submitted', { goal, audience, level, recommendedRole: data.recommendedRole?.name });
         setStep(3);
       } catch (err: any) {
         setSubmitError(err?.message || 'Failed to submit quiz');
@@ -230,7 +242,8 @@ export function OnboardingQuiz({ onComplete, onSkip }: OnboardingQuizProps) {
         setSubmitting(false);
       }
     } else if (step === 3 && goal && audience && level && recommended) {
-      // Final step - complete onboarding with Aha Moment first message
+      // Final step - track completion and complete onboarding with Aha Moment first message
+      trackCheckpoint('onboarding_complete', { recommendedRoleId: recommended.id });
       const answers: QuizAnswers = {
         goal,
         audience,

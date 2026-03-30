@@ -43,12 +43,16 @@ export function SpacedRepetitionReview({
   const [showAnswer, setShowAnswer] = React.useState(false);
   const [reviewedCount, setReviewedCount] = React.useState(0);
   const [dueItems, setDueItems] = React.useState<SpacedRepItem[]>([]);
+  const [isLoadingItems, setIsLoadingItems] = React.useState(true);
+  const [loadError, setLoadError] = React.useState<string | null>(null);
 
   const accent = accentColor || 'var(--color-electric-blue)';
 
   // B.8: Load due items from tRPC (server), fall back to local store
   React.useEffect(() => {
     let cancelled = false;
+    setIsLoadingItems(true);
+    setLoadError(null);
 
     async function loadDueItems() {
       try {
@@ -84,11 +88,17 @@ export function SpacedRepetitionReview({
           setDueItems(localItems);
           setPhase(localItems.length > 0 ? 'overview' : 'complete');
         }
-      } catch {
+      } catch (err) {
+        if (cancelled) return;
         // Server unavailable - fall back to local store
         const localItems = getDueItems(roleId);
         setDueItems(localItems);
+        if (localItems.length === 0) {
+          setLoadError('Could not load review items. Please try again later.');
+        }
         setPhase(localItems.length > 0 ? 'overview' : 'complete');
+      } finally {
+        if (!cancelled) setIsLoadingItems(false);
       }
       setCurrentIndex(0);
       setReviewedCount(0);
@@ -145,6 +155,38 @@ export function SpacedRepetitionReview({
   const handleSkip = () => {
     if (onSkip) onSkip();
   };
+
+  // Phase 13: Loading state - skeleton shimmer
+  if (isLoadingItems) {
+    return (
+      <Card padding="20px" style={{ maxWidth: 480, margin: '0 auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '20px 0' }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--color-surface-2)', animation: 'shimmer 1.5s ease-in-out infinite' }} />
+          <div style={{ width: 200, height: 16, borderRadius: 4, background: 'var(--color-surface-2)', animation: 'shimmer 1.5s ease-in-out infinite' }} />
+          <div style={{ width: 150, height: 12, borderRadius: 4, background: 'var(--color-surface-2)', animation: 'shimmer 1.5s ease-in-out infinite' }} />
+        </div>
+      </Card>
+    );
+  }
+
+  // Phase 13: Error state
+  if (loadError && dueItems.length === 0) {
+    return (
+      <Card padding="20px" style={{ maxWidth: 480, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+          <Brain size={32} style={{ color: 'var(--color-text-muted)', marginBottom: 12 }} />
+          <div style={{ fontSize: 14, color: 'var(--color-error)', fontFamily: 'var(--font-sans)', marginBottom: 8 }}>
+            {loadError}
+          </div>
+          {onSkip && (
+            <Button variant="ghost" size="md" onClick={onSkip}>
+              Skip for now
+            </Button>
+          )}
+        </div>
+      </Card>
+    );
+  }
 
   // Overview: show count of due items with option to start or skip
   if (phase === 'overview') {

@@ -31,6 +31,11 @@ import { GiftActivatePage } from '@/pages/GiftActivatePage';
 import { ReferralsPage } from '@/pages/ReferralsPage';
 import { PublicSharePage } from '@/pages/PublicSharePage';
 import { MySharesPage } from '@/pages/MySharesPage';
+// Phase 2: Homepage
+import { HomePage } from '@/pages/HomePage';
+// Phase 3: Marketplace
+import { CompanionsPage } from '@/pages/CompanionsPage';
+import { CompanionDetailPage } from '@/pages/CompanionDetailPage';
 // Phase 9: Marketing Pages
 import { NHSPage } from '@/pages/NHSPage';
 import { SchoolsPage } from '@/pages/SchoolsPage';
@@ -141,8 +146,11 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public route - no auth required */}
+        {/* Public routes - no auth required */}
         <Route path="/progress/:shareToken" element={<PublicSharePage />} />
+        <Route path="/home" element={<HomePage />} />
+        <Route path="/companions" element={<CompanionsPage />} />
+        <Route path="/companions/:slug" element={<CompanionDetailPage />} />
         {/* All other routes require auth */}
         <Route path="*" element={
       <AuthGate>

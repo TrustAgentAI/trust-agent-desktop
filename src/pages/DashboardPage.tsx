@@ -1,12 +1,14 @@
 import React from 'react';
-import { Users, MessageSquare, Wifi, WifiOff } from 'lucide-react';
+import { Users, MessageSquare, Wifi, WifiOff, AlertTriangle } from 'lucide-react';
 import { useAgentStore } from '@/store/agentStore';
 import type { HiredRole as StoreHiredRole } from '@/store/agentStore';
 import { useAuditStore } from '@/store/auditStore';
-import { gateway } from '@/lib/gateway';
+import { api } from '@/lib/api';
 import { wsClient } from '@/lib/ws';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState, GhostCard } from '@/components/ui/EmptyState';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { getErrorMessage } from '@/components/ui/Toast';
 
 /** Normalised shape used in the dashboard UI */
 interface DashboardRole {
@@ -14,16 +16,6 @@ interface DashboardRole {
   roleName: string;
   roleCategory: string;
   trustBadge: string;
-}
-
-/** Map gateway HiredRole to dashboard shape */
-function normaliseGatewayRole(r: { id: string; name: string; title: string; tier: string }): DashboardRole {
-  return {
-    hireId: r.id,
-    roleName: r.name,
-    roleCategory: r.title,
-    trustBadge: r.tier === 'professional' ? 'GOLD' : r.tier === 'enterprise' ? 'PLATINUM' : 'BASIC',
-  };
 }
 
 /** Map agentStore HiredRole to dashboard shape (fallback) */
@@ -44,20 +36,43 @@ export function DashboardPage() {
   const [hiredRoles, setHiredRoles] = React.useState<DashboardRole[]>(
     storeRoles.map(normaliseStoreRole),
   );
+  const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState<string | null>(null);
 
-  // Fetch hired roles from gateway API, falling back to agentStore
+  // Phase 6: Fetch hired roles from hires.listMyHires via tRPC
   React.useEffect(() => {
     let cancelled = false;
-    gateway.roles
-      .listHired()
-      .then((apiRoles) => {
-        if (!cancelled) {
-          setHiredRoles(apiRoles.map(normaliseGatewayRole));
+    setLoading(true);
+    setLoadError(null);
+
+    api.post<Record<string, unknown>>('/api/trpc/hires.listMyHires', { json: {} })
+      .then((res) => {
+        if (cancelled) return;
+        const data = (res as Record<string, unknown>)?.result
+          ? ((res as Record<string, unknown>).result as Record<string, unknown>)?.data
+          : res;
+        const hiresArray = Array.isArray(data) ? data : (data as Record<string, unknown>)?.hires;
+        if (Array.isArray(hiresArray)) {
+          setHiredRoles(hiresArray.map((r: Record<string, unknown>) => ({
+            hireId: (r.id as string) || (r.hireId as string) || '',
+            roleName: (r.roleName as string) || (r.name as string) || '',
+            roleCategory: (r.roleCategory as string) || (r.category as string) || (r.title as string) || '',
+            trustBadge: (r.trustBadge as string) || ((r.tier as string) === 'professional' ? 'GOLD' : (r.tier as string) === 'enterprise' ? 'PLATINUM' : 'BASIC'),
+          })));
         }
       })
-      .catch(() => {
-        // API unavailable - keep using agentStore data (already set as initial state)
+      .catch((err) => {
+        if (cancelled) return;
+        setLoadError(getErrorMessage());
+        // Fall back to agentStore data
+        if (storeRoles.length > 0) {
+          setHiredRoles(storeRoles.map(normaliseStoreRole));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
+
     return () => { cancelled = true; };
   }, []);
 
@@ -110,6 +125,44 @@ export function DashboardPage() {
       >
         Dashboard
       </h1>
+
+      {/* Phase 13: Loading state */}
+      {loading && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            <Skeleton height={80} borderRadius="var(--radius-lg)" />
+            <Skeleton height={80} borderRadius="var(--radius-lg)" />
+            <Skeleton height={80} borderRadius="var(--radius-lg)" />
+          </div>
+          <Skeleton height={20} width="120px" />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+            <Skeleton height={120} borderRadius="var(--radius-lg)" />
+            <Skeleton height={120} borderRadius="var(--radius-lg)" />
+            <Skeleton height={120} borderRadius="var(--radius-lg)" />
+          </div>
+        </div>
+      )}
+
+      {/* Phase 13: Error state */}
+      {!loading && loadError && (
+        <div
+          style={{
+            padding: '20px 24px',
+            background: 'rgba(239,68,68,0.06)',
+            border: '1px solid rgba(239,68,68,0.15)',
+            borderRadius: 'var(--radius-lg)',
+            marginBottom: 20,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          <AlertTriangle size={18} style={{ color: 'var(--color-error)', flexShrink: 0 }} />
+          <div style={{ fontSize: 13, color: 'var(--color-error)', fontFamily: 'var(--font-sans)' }}>
+            {loadError}
+          </div>
+        </div>
+      )}
 
       {/* Stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 28 }}>
